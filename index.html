@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#14532d">
+<title>Ensalada Scout · Feria</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = { theme: { extend: { colors: {
+  pino: '#14532d', hoja: '#16a34a', sandia: '#e11d48', menta: '#f0fdf4', ink: '#1c2b22'
+}}}};
+</script>
+<style>
+  body { -webkit-tap-highlight-color: transparent; }
+  .pb-safe { padding-bottom: calc(env(safe-area-inset-bottom, 0px) + .25rem); }
+  input, select { font-size: 16px; } /* evita zoom en iOS */
+</style>
+</head>
+<body class="bg-menta text-ink min-h-screen">
+
+<!-- Toast -->
+<div id="toast" class="fixed top-3 inset-x-3 z-50 pointer-events-none flex justify-center"></div>
+
+<!-- BLOQUEO -->
+<section id="lock" class="min-h-screen flex items-center justify-center p-6 bg-pino">
+  <div class="w-full max-w-sm bg-white rounded-3xl p-8 shadow-xl">
+    <div class="text-5xl mb-3">🍓</div>
+    <h1 class="text-2xl font-extrabold">Ensalada de frutas</h1>
+    <p class="text-slate-500 mb-6">Ingresá la clave del grupo para continuar.</p>
+    <input id="clave" type="password" autocomplete="current-password" placeholder="Clave de acceso"
+      class="w-full h-14 px-4 rounded-2xl border-2 border-slate-200 focus:border-hoja outline-none mb-3">
+    <p id="lockErr" class="text-sandia text-sm mb-3 hidden"></p>
+    <button id="btnLock" class="w-full h-14 rounded-2xl bg-hoja text-white font-bold text-lg active:scale-95 transition disabled:opacity-60">Entrar</button>
+  </div>
+</section>
+
+<!-- APP -->
+<div id="app" class="hidden">
+  <header class="bg-pino text-white px-5 py-4 flex items-center justify-between sticky top-0 z-30">
+    <span class="font-extrabold text-lg">🍓 Feria Scout</span>
+    <button id="btnRefresh" class="h-10 px-4 rounded-full bg-white/15 text-sm font-semibold active:scale-95">Actualizar</button>
+  </header>
+
+  <main class="max-w-2xl mx-auto p-4 pb-28">
+
+    <!-- INICIO -->
+    <section id="v-inicio" class="view space-y-4">
+      <button data-go="venta" class="w-full rounded-3xl bg-sandia text-white py-10 text-3xl font-extrabold shadow-lg active:scale-[.98] transition">+ Registrar Venta</button>
+      <div class="grid grid-cols-2 gap-3">
+        <div class="col-span-2 bg-white rounded-2xl p-5 shadow-sm">
+          <p class="text-slate-500 text-sm">Ensaladas disponibles</p>
+          <p id="m-stock" class="text-5xl font-extrabold text-pino">–</p>
+        </div>
+        <div class="bg-white rounded-2xl p-5 shadow-sm">
+          <p class="text-slate-500 text-sm">Recaudado hoy</p>
+          <p id="m-rec" class="text-2xl font-extrabold">–</p>
+          <p id="m-pend" class="text-xs text-slate-400 mt-1"></p>
+        </div>
+        <div class="bg-white rounded-2xl p-5 shadow-sm">
+          <p class="text-slate-500 text-sm">Ventas de hoy</p>
+          <p id="m-ventas" class="text-2xl font-extrabold">–</p>
+        </div>
+        <div class="col-span-2 bg-white rounded-2xl p-5 shadow-sm flex justify-between items-center">
+          <span class="text-slate-500 text-sm">Costo por porción</span>
+          <span id="m-costo" class="font-bold">–</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- VENTA -->
+    <section id="v-venta" class="view hidden space-y-4">
+      <div class="flex justify-between items-baseline">
+        <h2 class="text-2xl font-extrabold">Nueva venta</h2>
+        <span class="text-sm text-slate-500">Quedan <b id="v-stock">–</b></span>
+      </div>
+
+      <div class="bg-white rounded-3xl p-5 shadow-sm">
+        <p class="text-slate-500 text-sm mb-2 text-center">Cantidad de porciones</p>
+        <div class="flex items-center justify-between gap-3">
+          <button id="qMinus" class="w-24 h-24 rounded-3xl bg-slate-100 text-5xl font-bold active:scale-90 transition">−</button>
+          <span id="qty" class="text-7xl font-extrabold tabular-nums">1</span>
+          <button id="qPlus" class="w-24 h-24 rounded-3xl bg-hoja text-white text-5xl font-bold active:scale-90 transition">+</button>
+        </div>
+        <p id="priceInfo" class="text-center text-sm text-slate-500 mt-3"></p>
+      </div>
+
+      <div class="bg-pino text-white rounded-3xl p-5 text-center">
+        <p class="text-sm text-white/70">Total a cobrar</p>
+        <p id="total" class="text-5xl font-extrabold">$0</p>
+      </div>
+
+      <div>
+        <p class="text-sm font-semibold mb-2">Método de cobro</p>
+        <div id="metodos" class="grid grid-cols-3 gap-2"></div>
+      </div>
+
+      <button id="btnCobrado" class="w-full h-16 rounded-2xl border-2 flex items-center justify-center gap-3 text-lg font-bold active:scale-[.98] transition"></button>
+
+      <button id="btnVenta" class="w-full h-20 rounded-3xl bg-sandia text-white text-2xl font-extrabold shadow-lg active:scale-[.98] transition disabled:opacity-60">Guardar Venta</button>
+
+      <details class="bg-white rounded-2xl p-4 text-sm">
+        <summary class="cursor-pointer text-slate-500 font-medium">Cobrar otro monto (opcional)</summary>
+        <div class="mt-3 space-y-2">
+          <input id="manual" type="number" inputmode="numeric" min="0" placeholder="Monto distinto al total"
+            class="w-full h-12 px-4 rounded-xl border border-slate-200 outline-none focus:border-hoja">
+          <input id="nota" type="text" placeholder="Nota (ej: descuento, redondeo)"
+            class="w-full h-12 px-4 rounded-xl border border-slate-200 outline-none focus:border-hoja">
+        </div>
+      </details>
+    </section>
+
+    <!-- STOCK -->
+    <section id="v-stock" class="view hidden space-y-5">
+      <h2 class="text-2xl font-extrabold">Compras y producción</h2>
+
+      <div class="bg-white rounded-3xl p-5 shadow-sm space-y-3">
+        <h3 class="font-bold text-lg">Registrar compra de insumos</h3>
+        <input id="c-insumo" type="text" placeholder="Insumo (ej: Bananas)" class="w-full h-14 px-4 rounded-2xl border border-slate-200 outline-none focus:border-hoja">
+        <div class="grid grid-cols-2 gap-3">
+          <input id="c-cant" type="number" inputmode="decimal" min="0" placeholder="Cantidad" class="h-14 px-4 rounded-2xl border border-slate-200 outline-none focus:border-hoja">
+          <select id="c-unidad" class="h-14 px-3 rounded-2xl border border-slate-200 bg-white outline-none focus:border-hoja">
+            <option>kg</option><option>unidades</option><option>litros</option><option>paquetes</option>
+          </select>
+        </div>
+        <input id="c-costo" type="number" inputmode="numeric" min="0" placeholder="Costo total pagado ($)" class="w-full h-14 px-4 rounded-2xl border border-slate-200 outline-none focus:border-hoja">
+        <button id="btnCompra" class="w-full h-14 rounded-2xl bg-hoja text-white font-bold text-lg active:scale-95 transition disabled:opacity-60">Guardar compra</button>
+      </div>
+
+      <div class="bg-white rounded-3xl p-5 shadow-sm space-y-3">
+        <h3 class="font-bold text-lg">Registrar producción</h3>
+        <input id="p-porc" type="number" inputmode="numeric" min="1" placeholder="Porciones elaboradas" class="w-full h-14 px-4 rounded-2xl border border-slate-200 outline-none focus:border-hoja">
+        <input id="p-nota" type="text" placeholder="Nota (opcional)" class="w-full h-14 px-4 rounded-2xl border border-slate-200 outline-none focus:border-hoja">
+        <button id="btnProd" class="w-full h-14 rounded-2xl bg-hoja text-white font-bold text-lg active:scale-95 transition disabled:opacity-60">Guardar producción</button>
+      </div>
+    </section>
+  </main>
+
+  <!-- NAV -->
+  <nav class="fixed bottom-0 inset-x-0 bg-white border-t border-slate-200 z-30 pb-safe">
+    <div class="max-w-2xl mx-auto grid grid-cols-3">
+      <button data-go="inicio" class="nav py-3 text-sm font-semibold"><span class="block text-xl">🏠</span>Inicio</button>
+      <button data-go="venta" class="nav py-3 text-sm font-semibold"><span class="block text-xl">💵</span>Vender</button>
+      <button data-go="stock" class="nav py-3 text-sm font-semibold"><span class="block text-xl">📦</span>Stock</button>
+    </div>
+  </nav>
+</div>
+
+<script>
+/* ============ CONFIGURACIÓN ============ */
+// Pegá acá la URL de tu Web App de Apps Script (termina en /exec)
+const API_URL = 'https://script.google.com/macros/s/AKfycbwNubodrcUsEfw5jjlDZraeu6xP6QyCExFaccaWTD8SGeaAAYbTQHszZxh7jpF0VJq2/exec';
+
+/* ============ ESTADO Y UTILIDADES ============ */
+const $ = id => document.getElementById(id);
+const METODOS = ['Efectivo', 'Transferencia', 'Otro'];
+const S = { cfg: { precio: 0, comboQty: 0, precioCombo: 0 }, stock: 0, qty: 1, metodo: 'Efectivo', cobrado: true };
+const money = n => '$' + Number(n || 0).toLocaleString('es-AR');
+
+function toast(msg, tipo = 'ok') {
+  const el = document.createElement('div');
+  el.className = 'px-5 py-3 rounded-2xl shadow-lg text-white font-semibold max-w-sm ' + (tipo === 'ok' ? 'bg-hoja' : 'bg-sandia');
+  el.textContent = msg;
+  $('toast').appendChild(el);
+  setTimeout(() => el.remove(), 3200);
+}
+
+async function api(action, data) {
+  const key = sessionStorage.getItem('clave') || '';
+  let res;
+  try {
+    res = action === 'getData'
+      ? await fetch(`${API_URL}?action=getData&key=${encodeURIComponent(key)}`)
+      : await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action, key, data }) });
+  } catch (e) {
+    throw new Error('Sin conexión con el servidor. Revisá internet y la URL del Web App.');
+  }
+  let j;
+  try { j = await res.json(); } catch (e) { throw new Error('Respuesta inválida del servidor. Revisá la implementación del Apps Script.'); }
+  if (!j.ok) throw new Error(j.error || 'Error desconocido');
+  return j;
+}
+
+/* Bloquea un botón mientras se guarda (evita doble click) */
+async function withBusy(btn, label, fn) {
+  if (btn.disabled) return;
+  const old = btn.textContent;
+  btn.disabled = true; btn.textContent = 'Guardando...';
+  try { await fn(); } catch (e) { toast(e.message, 'err'); }
+  finally { btn.disabled = false; btn.textContent = old; }
+}
+
+/* ============ ACCESO ============ */
+async function unlock(clave) {
+  sessionStorage.setItem('clave', clave);
+  try {
+    applyData(await api('getData'));
+    $('lock').classList.add('hidden'); $('app').classList.remove('hidden');
+    go('inicio');
+  } catch (e) {
+    sessionStorage.removeItem('clave');
+    $('lockErr').textContent = e.message; $('lockErr').classList.remove('hidden');
+  }
+}
+$('btnLock').onclick = async () => {
+  const c = $('clave').value.trim(); if (!c) return;
+  $('btnLock').disabled = true; $('btnLock').textContent = 'Verificando...';
+  await unlock(c);
+  $('btnLock').disabled = false; $('btnLock').textContent = 'Entrar';
+};
+$('clave').addEventListener('keydown', e => { if (e.key === 'Enter') $('btnLock').click(); });
+
+/* ============ DATOS ============ */
+function applyData(d) {
+  S.cfg = d.config; S.stock = d.stock;
+  $('m-stock').textContent = d.stock;
+  $('v-stock').textContent = d.stock;
+  $('m-rec').textContent = money(d.recaudadoHoy);
+  $('m-pend').textContent = d.pendienteHoy > 0 ? 'Sin cobrar: ' + money(d.pendienteHoy) : '';
+  $('m-ventas').textContent = d.ventasHoy;
+  $('m-costo').textContent = d.costoPorcion ? money(d.costoPorcion) : 'Sin datos';
+  renderVenta();
+}
+async function refresh() {
+  $('btnRefresh').textContent = '...';
+  try { applyData(await api('getData')); } catch (e) { toast(e.message, 'err'); }
+  $('btnRefresh').textContent = 'Actualizar';
+}
+$('btnRefresh').onclick = refresh;
+
+/* ============ NAVEGACIÓN ============ */
+function go(v) {
+  document.querySelectorAll('.view').forEach(s => s.classList.add('hidden'));
+  $('v-' + v).classList.remove('hidden');
+  document.querySelectorAll('.nav').forEach(b => {
+    const on = b.dataset.go === v;
+    b.classList.toggle('text-sandia', on); b.classList.toggle('text-slate-500', !on);
+  });
+  window.scrollTo(0, 0);
+}
+document.querySelectorAll('[data-go]').forEach(b => b.addEventListener('click', () => go(b.dataset.go)));
+
+/* ============ VENTA ============ */
+function calcTotal() {
+  const { precio, comboQty, precioCombo } = S.cfg, q = S.qty;
+  if (comboQty > 1 && precioCombo > 0) return Math.floor(q / comboQty) * precioCombo + (q % comboQty) * precio;
+  return q * precio;
+}
+function renderVenta() {
+  const { precio, comboQty, precioCombo } = S.cfg;
+  $('qty').textContent = S.qty;
+  $('total').textContent = money(calcTotal());
+  $('priceInfo').textContent = `Individual ${money(precio)}` + (comboQty > 1 ? ` · Combo ${comboQty} por ${money(precioCombo)}` : '');
+  $('metodos').innerHTML = METODOS.map(m =>
+    `<button data-m="${m}" class="h-14 rounded-2xl font-bold border-2 active:scale-95 transition ${m === S.metodo ? 'bg-pino text-white border-pino' : 'bg-white border-slate-200'}">${m}</button>`).join('');
+  $('metodos').querySelectorAll('button').forEach(b => b.onclick = () => { S.metodo = b.dataset.m; renderVenta(); });
+  const c = $('btnCobrado');
+  c.className = 'w-full h-16 rounded-2xl border-2 flex items-center justify-center gap-3 text-lg font-bold active:scale-[.98] transition ' +
+    (S.cobrado ? 'bg-green-100 border-hoja text-pino' : 'bg-amber-50 border-amber-400 text-amber-800');
+  c.textContent = S.cobrado ? '✅ Cobrado' : '⏳ Pendiente de cobro';
+}
+$('qPlus').onclick = () => { S.qty++; renderVenta(); };
+$('qMinus').onclick = () => { if (S.qty > 1) S.qty--; renderVenta(); };
+$('btnCobrado').onclick = () => { S.cobrado = !S.cobrado; renderVenta(); };
+
+$('btnVenta').onclick = () => withBusy($('btnVenta'), '', async () => {
+  const manualRaw = $('manual').value.trim();
+  const manual = manualRaw !== '';
+  const monto = manual ? Number(manualRaw) : calcTotal();
+  if (!(monto >= 0)) throw new Error('El monto no es válido');
+  if (S.qty > S.stock && !confirm(`Solo quedan ${S.stock} en stock. ¿Registrar igual?`)) return;
+  const d = await api('venta', { cantidad: S.qty, monto, manual, metodo: S.metodo, cobrado: S.cobrado, nota: $('nota').value.trim() });
+  applyData(d);
+  S.qty = 1; S.cobrado = true; $('manual').value = ''; $('nota').value = ''; renderVenta();
+  toast('Venta guardada · ' + money(monto));
+  go('inicio');
+});
+
+/* ============ COMPRAS Y PRODUCCIÓN ============ */
+$('btnCompra').onclick = () => withBusy($('btnCompra'), '', async () => {
+  const insumo = $('c-insumo').value.trim(), costo = $('c-costo').value;
+  if (!insumo || costo === '') throw new Error('Completá el insumo y el costo total');
+  applyData(await api('compra', { insumo, cantidad: $('c-cant').value, unidad: $('c-unidad').value, costo }));
+  ['c-insumo', 'c-cant', 'c-costo'].forEach(i => $(i).value = '');
+  toast('Compra guardada');
+});
+$('btnProd').onclick = () => withBusy($('btnProd'), '', async () => {
+  const porciones = $('p-porc').value;
+  if (!(Number(porciones) > 0)) throw new Error('Ingresá las porciones elaboradas');
+  applyData(await api('produccion', { porciones, nota: $('p-nota').value.trim() }));
+  $('p-porc').value = ''; $('p-nota').value = '';
+  toast('Producción guardada');
+});
+
+/* ============ ARRANQUE ============ */
+if (sessionStorage.getItem('clave')) unlock(sessionStorage.getItem('clave'));
+</script>
+</body>
+</html>
