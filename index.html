@@ -3,39 +3,47 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#1f2a2e">
+<meta name="theme-color" content="#0d0a22">
 <title>Peña Chechu</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.tailwindcss.com"></script>
 <script>
 tailwind.config = { theme: { extend: {
-  fontFamily: { sans: ['"Hanken Grotesk"', 'system-ui', 'sans-serif'] },
-  colors: { noche: '#1f2a2e', magenta: '#b3261e', ambar: '#f2c14e', turq: '#1f6f5c', cielo: '#3d5a80', lila: '#f5f6f3' }
+  fontFamily: { sans: ['Nunito', 'system-ui', 'sans-serif'] },
+  colors: { noche: '#7c5cff', magenta: '#ff4fa3', ambar: '#ffc233', turq: '#2de2c4', cielo: '#6ea8ff', lila: '#140f2e' }
 }}};
 </script>
 <style>
-  body { -webkit-tap-highlight-color: transparent; background: #f5f6f3; }
-  .poncho { height: 3px; background: linear-gradient(90deg,#b3261e 0 25%,#f2c14e 0 50%,#1f6f5c 0 75%,#3d5a80 0); }
-  .card { background: #fff; border: 1px solid #dfe3dc; border-radius: 1rem; }
-  .btn { border: 0; font-weight: 700; transition: transform .08s, opacity .15s; }
-  .btn.bg-white { border: 1px solid #cfd5cc; }
-  .btn:active { transform: scale(.97); }
+  body { -webkit-tap-highlight-color: transparent; background: radial-gradient(900px 420px at 10% -5%, #3b1f78aa, transparent 60%), radial-gradient(700px 400px at 100% 8%, #7a1f6a66, transparent 60%), #140f2e; background-attachment: fixed; }
+  h1, h2, h3, header span.text-2xl { font-family: 'Baloo 2', sans-serif; }
+  .bunting { height: 26px; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='26'%3E%3Cpath d='M0 2Q60 8 120 2' stroke='%23fff' stroke-opacity='.35' fill='none'/%3E%3Cpath d='M4 4L26 5L15 24Z' fill='%23ff4fa3'/%3E%3Cpath d='M34 5L56 6L45 25Z' fill='%23ffc233'/%3E%3Cpath d='M64 6L86 6L75 25Z' fill='%232de2c4'/%3E%3Cpath d='M94 5L116 4L105 23Z' fill='%238b6cff'/%3E%3C/svg%3E") repeat-x; }
+  .card { background: #1e1747; border: 1px solid #3a2f7a; border-radius: 1.25rem; }
+  .btn { border: 0; font-weight: 800; transition: transform .08s, opacity .15s; }
+  .btn.bg-white { background: #2a2160; color: #fff; border: 1px solid #4a3d9a; }
+  .btn.bg-ambar, .btn.bg-turq, .btn.bg-magenta, .btn.bg-cielo { color: #1b1240; }
+  .btn:active { transform: scale(.96); }
   .btn:disabled { opacity: .6; }
-  .inp { width: 100%; height: 3.5rem; padding: 0 1rem; border: 1px solid #cfd5cc; border-radius: .75rem; background: #fff; font-size: 16px; outline: none; }
-  .inp:focus { border-color: #1f6f5c; box-shadow: 0 0 0 3px rgba(31,111,92,.15); }
+  .glow { box-shadow: 0 0 28px rgba(255,194,51,.35); }
+  .inp { width: 100%; height: 3.5rem; padding: 0 1rem; border: 1px solid #4a3d9a; border-radius: .9rem; background: #140f2e; color: #fff; font-size: 16px; outline: none; }
+  .inp:focus { border-color: #ffc233; box-shadow: 0 0 0 3px rgba(255,194,51,.2); }
+  select option { background: #1e1747; color: #fff; }
+  .text-slate-500, .text-slate-600 { color: #a99ee0; }
+  .total { background: linear-gradient(135deg, #7c5cff, #ff4fa3); border: 0; }
+  .pop { animation: pop .3s ease-out; }
+  @keyframes pop { from { transform: scale(.7); opacity: 0; } to { transform: scale(1); opacity: 1; } }
   .pb-safe { padding-bottom: env(safe-area-inset-bottom, 0px); }
 </style>
 </head>
-<body class="font-sans text-noche min-h-screen">
+<body class="font-sans text-[#f4efff] min-h-screen">
 
 <div id="toast" class="fixed top-3 inset-x-3 z-[60] pointer-events-none flex flex-col items-center gap-2"></div>
 
 <!-- BLOQUEO (oculto hasta que el JS decida) -->
-<section id="lock" class="hidden min-h-screen flex items-center justify-center p-6 bg-noche">
+<section id="lock" class="hidden min-h-screen flex items-center justify-center p-6">
   <div class="card w-full max-w-sm p-8">
     <h1 class="text-4xl font-bold leading-none">Peña<br>Chechu</h1>
-    <div class="poncho rounded-full my-4"></div>
+    <div class="bunting my-3 -mx-2"></div>
     <p class="text-slate-600 mb-5">Ingresá la clave del grupo.</p>
     <input id="clave" type="password" autocomplete="current-password" placeholder="Clave de acceso" class="inp mb-3">
     <p id="lockErr" class="text-magenta font-semibold text-sm mb-3 hidden"></p>
@@ -45,22 +53,24 @@ tailwind.config = { theme: { extend: {
 
 <!-- APP -->
 <div id="app" class="hidden">
-  <header class="bg-noche text-white sticky top-0 z-30">
+  <header class="bg-[#0d0a22] text-white sticky top-0 z-30">
     <div class="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between gap-2">
       <span class="text-2xl font-bold">Peña Chechu</span>
       <div class="flex items-center gap-2">
+        <button id="sync" class="h-10 px-3 rounded-full text-sm font-bold"></button>
         <select id="year" class="h-10 rounded-full bg-white/15 text-white font-bold px-3 text-sm outline-none"></select>
         <button id="btnRefresh" class="h-10 w-10 rounded-full bg-white/15 font-bold" title="Actualizar">↻</button>
       </div>
     </div>
-    <div class="poncho"></div>
+    <div class="bunting"></div>
+    <button id="errBar" class="hidden w-full bg-magenta text-[#1b1240] text-sm font-bold px-4 py-2 text-center"></button>
   </header>
 
   <main class="max-w-2xl mx-auto p-4 pb-32">
 
     <!-- INICIO -->
     <section id="v-inicio" class="view space-y-4">
-      <button data-go="venta" class="btn w-full rounded-2xl bg-turq text-white py-9 text-2xl">+ Registrar Venta</button>
+      <button data-go="venta" class="btn glow w-full rounded-2xl bg-ambar py-9 text-2xl">+ Registrar Venta</button>
       <div class="card p-5 border-l-4 border-l-turq">
         <p class="text-slate-500 text-sm">Porciones disponibles</p>
         <p id="m-stock" class="text-6xl font-bold">–</p>
@@ -90,7 +100,7 @@ tailwind.config = { theme: { extend: {
         </div>
         <p id="priceInfo" class="text-center text-sm text-slate-500 mt-3"></p>
       </div>
-      <div class="card bg-noche text-white p-5 text-center">
+      <div class="card total p-5 text-center">
         <p class="text-sm text-white/70">Total a cobrar</p>
         <p id="total" class="text-5xl font-bold text-ambar">$0</p>
       </div>
@@ -99,7 +109,7 @@ tailwind.config = { theme: { extend: {
         <div id="metodos" class="grid grid-cols-3 gap-2"></div>
       </div>
       <button id="btnCobrado" class="btn w-full h-16 rounded-2xl text-lg"></button>
-      <button id="btnVenta" class="btn w-full h-20 rounded-3xl bg-ambar text-2xl">Guardar Venta</button>
+      <button id="btnVenta" class="btn glow w-full h-20 rounded-3xl bg-ambar text-2xl">Guardar Venta</button>
       <details class="card p-4 text-sm">
         <summary class="cursor-pointer text-slate-600 font-semibold">Cobrar otro monto (opcional)</summary>
         <div class="mt-3 space-y-2">
@@ -173,7 +183,7 @@ tailwind.config = { theme: { extend: {
     </section>
   </main>
 
-  <nav class="fixed bottom-0 inset-x-0 bg-white border-t border-slate-200 z-30 pb-safe">
+  <nav class="fixed bottom-0 inset-x-0 bg-[#0d0a22] border-t border-[#3a2f7a] z-30 pb-safe">
     <div class="max-w-2xl mx-auto grid grid-cols-5">
       <button data-go="inicio" class="nav py-2 text-xs font-bold"><span class="block text-xl">🏠</span>Inicio</button>
       <button data-go="venta" class="nav py-2 text-xs font-bold"><span class="block text-xl">💵</span>Vender</button>
@@ -185,7 +195,7 @@ tailwind.config = { theme: { extend: {
 </div>
 
 <!-- MODAL EDICIÓN -->
-<div id="modal" class="hidden fixed inset-0 z-50 bg-noche/70 flex items-end sm:items-center justify-center p-3">
+<div id="modal" class="hidden fixed inset-0 z-50 bg-black/70 flex items-end sm:items-center justify-center p-3">
   <div class="card w-full max-w-md max-h-[90vh] overflow-y-auto p-5 space-y-3">
     <h3 id="mTitle" class="text-2xl font-bold"></h3>
     <div id="mFields" class="space-y-3"></div>
@@ -235,7 +245,7 @@ async function api(action, extra = {}) {
   } catch (e) { throw new Error('Sin conexión con el servidor. Revisá internet y la URL del Web App.'); }
   let j;
   try { j = await res.json(); } catch (e) { throw new Error('Respuesta inválida. Revisá la implementación del Apps Script.'); }
-  if (!j.ok) throw new Error(j.error || 'Error desconocido');
+  if (!j.ok) { const er = new Error(j.error || 'Error desconocido'); er.server = true; throw er; }
   return j;
 }
 
@@ -261,7 +271,7 @@ async function tryUnlock() {
   $('clave').disabled = true; $('btnLock').disabled = true; $('btnLock').textContent = 'Verificando...';
   $('lockErr').classList.add('hidden');
   sessionStorage.setItem('clave', c);
-  try { applyData(await api('getData')); S.view = 'inicio'; $('clave').value = ''; showApp(); }
+  try { applyData(await api('getData')); pump(); S.view = 'inicio'; $('clave').value = ''; showApp(); }
   catch (e) { showLock(e.message); }
 }
 $('btnLock').onclick = tryUnlock;
@@ -272,6 +282,7 @@ $('btnSalir').onclick = () => { showLock(); $('clave').value = ''; };
 function applyData(d) {
   if (!d || !Array.isArray(d.years)) throw new Error('El Apps Script está desactualizado: pegá el nuevo Codigo.gs y creá una NUEVA VERSIÓN de la implementación.');
   S.cfg = d.config; S.stock = d.stock; S.year = d.year; S.data = d;
+  try { localStorage.setItem('ultimo', JSON.stringify(d)); } catch (e) {}
   $('year').innerHTML = d.years.map(y => `<option ${y === d.year ? 'selected' : ''}>${y}</option>`).join('');
   document.querySelectorAll('.yr').forEach(e => e.textContent = d.year);
   $('m-stock').textContent = d.stock; $('v-quedan').textContent = d.stock;
@@ -331,32 +342,88 @@ $('qPlus').onclick = () => { S.qty++; renderVenta(); };
 $('qMinus').onclick = () => { if (S.qty > 1) S.qty--; renderVenta(); };
 $('btnCobrado').onclick = () => { S.cobrado = !S.cobrado; renderVenta(); };
 
-$('btnVenta').onclick = () => withBusy($('btnVenta'), async () => {
+/* ============ COLA DE ENVÍO: guarda al instante y sincroniza en segundo plano ============ */
+const Q = { list: JSON.parse(localStorage.getItem('cola') || '[]'), busy: false, err: '' };
+const saveQ = () => localStorage.setItem('cola', JSON.stringify(Q.list));
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+function nowStamp() { const d = new Date(), p = n => String(n).padStart(2, '0'); return { fecha: `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`, hora: `${p(d.getHours())}:${p(d.getMinutes())}` }; }
+
+function renderSync() {
+  const n = Q.list.length, b = $('sync'), bar = $('errBar'), base = 'h-10 px-3 rounded-full text-sm font-bold ';
+  if (Q.err) { b.textContent = `⚠ ${n} sin enviar`; b.className = base + 'bg-magenta text-[#1b1240] animate-pulse'; bar.textContent = '⚠ ' + Q.err + ' · Tocá para reintentar'; bar.classList.remove('hidden'); }
+  else if (n) { b.textContent = `⟳ Enviando ${n}`; b.className = base + 'bg-ambar text-[#1b1240]'; bar.classList.add('hidden'); }
+  else { b.textContent = '✓ Enviado'; b.className = base + 'bg-turq/20 text-turq'; bar.classList.add('hidden'); }
+}
+async function pump() {
+  if (Q.busy || !Q.list.length || !sessionStorage.getItem('clave')) return;
+  Q.busy = true; Q.err = ''; renderSync();
+  while (Q.list.length) {
+    const it = Q.list[0];
+    try {
+      const r = await api('add', { sheet: it.sheet, data: { ...it.data, cid: it.cid } });
+      Q.list.shift(); saveQ();
+      if (!Q.list.length && r.year === S.year) applyData(r);
+      renderSync();
+    } catch (e) {
+      if (e.message === 'Clave incorrecta') { Q.busy = false; showLock(e.message); return; }
+      if (e.server) { Q.list.shift(); saveQ(); toast('El servidor rechazó un registro: ' + e.message, 'err'); continue; }
+      Q.err = e.message; break;
+    }
+  }
+  Q.busy = false; renderSync();
+}
+$('sync').onclick = pump; $('errBar').onclick = pump;
+window.addEventListener('online', pump);
+setInterval(() => { if (Q.list.length && !Q.busy) pump(); }, 15000);
+
+function celebrate(msg) {
+  const el = document.createElement('div');
+  el.className = 'fixed inset-0 z-[70] flex items-center justify-center pointer-events-none';
+  el.innerHTML = `<div class="pop card px-8 py-6 text-center text-2xl font-bold" style="border-color:#2de2c4">🎉<br>${esc(msg)}</div>`;
+  document.body.appendChild(el); setTimeout(() => el.remove(), 900);
+}
+function applyLocal(sheet, d) {
+  const x = S.data, n = v => Number(v) || 0;
+  if (sheet === 'Ventas') {
+    x.vendidas += n(d.cantidad); x.stock -= n(d.cantidad); x.ventasAnio++; x.ventasHoy++;
+    if (d.cobrado === 'Sí') { x.recaudado += n(d.monto); x.recaudadoHoy += n(d.monto); } else x.pendiente += n(d.monto);
+  } else if (sheet === 'Stock_Costos') x.costoTotal += n(d.costo);
+  else { x.producidas += n(d.porciones); x.stock += n(d.porciones); }
+  x.costoPorcion = x.producidas > 0 ? Math.round(x.costoTotal / x.producidas) : 0;
+  x.ganancia = x.recaudado - x.costoTotal;
+  applyData(x);
+}
+function submit(sheet, data, okMsg) {
+  if (Date.now() - (S.last || 0) < 700) return false; // evita doble toque
+  S.last = Date.now();
+  data = { ...data, ...nowStamp() };
+  Q.list.push({ cid: uid(), sheet, data }); saveQ();
+  const cur = String(new Date().getFullYear());
+  if (S.year !== cur) { S.year = cur; refresh(); } else applyLocal(sheet, data);
+  S.lists = {}; renderSync(); celebrate(okMsg); pump();
+  return true;
+}
+
+$('btnVenta').onclick = () => {
   if (!vendedor()) { toast('Primero poné tu nombre en Ajustes', 'err'); go('cfg'); return; }
   const raw = $('manual').value.trim(), manual = raw !== '';
   const monto = manual ? Number(raw) : calcTotal();
-  if (!(monto >= 0)) throw new Error('El monto no es válido');
+  if (!(monto >= 0)) return toast('El monto no es válido', 'err');
   if (S.qty > S.stock && !confirm(`Solo quedan ${S.stock} en stock. ¿Registrar igual?`)) return;
-  S.year = String(new Date().getFullYear());
-  const d = await api('add', { sheet: 'Ventas', data: { cantidad: S.qty, tipo: manual ? 'Monto manual' : 'Precio lista', monto, metodo: S.metodo, cobrado: S.cobrado ? 'Sí' : 'No', vendedor: vendedor(), nota: $('nota').value.trim() } });
-  S.lists = {}; applyData(d);
-  S.qty = 1; S.cobrado = true; $('manual').value = ''; $('nota').value = ''; renderVenta();
-  toast('Venta guardada · ' + money(monto)); go('inicio');
-});
-
-/* ============ COMPRAS Y PRODUCCIÓN ============ */
-$('btnCompra').onclick = () => withBusy($('btnCompra'), async () => {
+  const ok = submit('Ventas', { cantidad: S.qty, tipo: manual ? 'Monto manual' : 'Precio lista', monto, metodo: S.metodo, cobrado: S.cobrado ? 'Sí' : 'No', vendedor: vendedor(), nota: $('nota').value.trim() }, '¡Venta guardada! ' + money(monto));
+  if (ok) { S.qty = 1; S.cobrado = true; $('manual').value = ''; $('nota').value = ''; renderVenta(); }
+};
+$('btnCompra').onclick = () => {
   const insumo = $('c-insumo').value.trim(), costo = $('c-costo').value;
-  if (!insumo || costo === '') throw new Error('Completá el insumo y el costo total');
-  applyData(await api('add', { sheet: 'Stock_Costos', data: { insumo, cantidad: $('c-cant').value, unidad: $('c-unidad').value, costo, vendedor: vendedor() } }));
-  S.lists = {}; ['c-insumo', 'c-cant', 'c-costo'].forEach(i => $(i).value = ''); toast('Compra guardada');
-});
-$('btnProd').onclick = () => withBusy($('btnProd'), async () => {
+  if (!insumo || costo === '') return toast('Completá el insumo y el costo total', 'err');
+  if (submit('Stock_Costos', { insumo, cantidad: $('c-cant').value, unidad: $('c-unidad').value, costo, vendedor: vendedor() }, '¡Compra guardada!'))
+    ['c-insumo', 'c-cant', 'c-costo'].forEach(i => $(i).value = '');
+};
+$('btnProd').onclick = () => {
   const porciones = $('p-porc').value;
-  if (!(Number(porciones) > 0)) throw new Error('Ingresá las porciones elaboradas');
-  applyData(await api('add', { sheet: 'Produccion', data: { porciones, nota: $('p-nota').value.trim(), vendedor: vendedor() } }));
-  S.lists = {}; $('p-porc').value = ''; $('p-nota').value = ''; toast('Producción guardada');
-});
+  if (!(Number(porciones) > 0)) return toast('Ingresá las porciones elaboradas', 'err');
+  if (submit('Produccion', { porciones, nota: $('p-nota').value.trim(), vendedor: vendedor() }, '¡Producción guardada!')) { $('p-porc').value = ''; $('p-nota').value = ''; }
+};
 
 /* ============ AJUSTES ============ */
 $('btnCfg').onclick = () => withBusy($('btnCfg'), async () => {
@@ -387,7 +454,7 @@ async function loadHist() {
         <span class="font-bold text-lg shrink-0">${m}</span></button>`;
     }).join('');
     $('histList').querySelectorAll('[data-row]').forEach(b => b.onclick = () => openEdit(rows.find(r => r.row == b.dataset.row)));
-  } catch (e) { $('histList').innerHTML = ''; handleErr(e); }
+  } catch (e) { if (e.message === 'Clave incorrecta') return handleErr(e); $('histList').innerHTML = `<div class="card p-5 text-center"><p class="text-magenta font-bold mb-3">No se pudo leer: ${esc(e.message)}</p><button id="retryBtn" class="btn h-12 px-6 rounded-2xl bg-ambar">Reintentar</button></div>`; $('retryBtn').onclick = loadHist; }
 }
 function openEdit(r) {
   S.edit = r; const d = DEF[S.tab];
@@ -404,11 +471,13 @@ function openEdit(r) {
 const closeModal = () => $('modal').classList.add('hidden');
 $('mCancel').onclick = closeModal;
 $('mSave').onclick = () => withBusy($('mSave'), async () => {
+  if (Q.list.length) throw new Error('Esperá a que termine de enviarse lo pendiente.');
   const data = {}; $('mFields').querySelectorAll('[data-k]').forEach(i => data[i.dataset.k] = i.value);
   applyData(await api('update', { sheet: S.tab, row: S.edit.row, data }));
   S.lists = {}; closeModal(); toast('Cambios guardados'); if (S.view === 'hist') loadHist();
 });
 $('mDel').onclick = () => withBusy($('mDel'), async () => {
+  if (Q.list.length) throw new Error('Esperá a que termine de enviarse lo pendiente.');
   if (!confirm('¿Borrar este registro? No se puede deshacer.')) return;
   applyData(await api('delete', { sheet: S.tab, row: S.edit.row }));
   S.lists = {}; closeModal(); toast('Registro borrado'); if (S.view === 'hist') loadHist();
@@ -425,7 +494,7 @@ function cols(items, color) {
 function hbars(items, color, fmt = x => x) {
   const max = Math.max(...items.map(i => i.v), 1);
   return items.map(i => `<div class="mb-2"><div class="flex justify-between text-sm font-semibold"><span>${esc(i.l)}</span><span>${fmt(i.v)}</span></div>
-    <div class="h-3 rounded-full bg-slate-100 overflow-hidden"><div class="h-full" style="width:${i.v / max * 100}%;background:${color}"></div></div></div>`).join('');
+    <div class="h-3 rounded-full bg-white/10 overflow-hidden"><div class="h-full" style="width:${i.v / max * 100}%;background:${color}"></div></div></div>`).join('');
 }
 const group = (rows, keyFn, valFn) => { const m = {}; rows.forEach(r => { const k = keyFn(r); m[k] = (m[k] || 0) + valFn(r); }); return m; };
 async function loadGraf() {
@@ -439,17 +508,20 @@ async function loadGraf() {
     const vend = Object.entries(group(V, r => r.vendedor || 'Sin nombre', r => Number(r.cantidad) || 0)).map(([l, v]) => ({ l, v })).sort((a, b) => b.v - a.v);
     const d = S.data, ab = [{ l: 'Recaudado', v: d.recaudado }, { l: 'Costos', v: d.costoTotal }, { l: 'Ganancia', v: Math.max(d.ganancia, 0) }];
     $('grafBody').innerHTML = [
-      ['Recaudado por día (últimos 14 días con ventas, $)', cols(dias, '#d9a03f')],
-      ['Porciones vendidas por hora', cols(horas, '#3d5a80')],
-      ['Cobros por método ($)', hbars(metodos, '#1f6f5c', money)],
-      ['Porciones vendidas por vendedor', hbars(vend, '#7a8f6a')],
-      ['Recaudado vs. costos ($)', hbars(ab, '#1f2a2e', money)]
+      ['Recaudado por día (últimos 14 días con ventas, $)', cols(dias, '#ffc233')],
+      ['Porciones vendidas por hora', cols(horas, '#ff4fa3')],
+      ['Cobros por método ($)', hbars(metodos, '#2de2c4', money)],
+      ['Porciones vendidas por vendedor', hbars(vend, '#8b6cff')],
+      ['Recaudado vs. costos ($)', hbars(ab, '#6ea8ff', money)]
     ].map(([t, h]) => `<div class="card p-4"><h3 class="font-bold mb-2">${t}</h3>${h}</div>`).join('');
-  } catch (e) { $('grafBody').innerHTML = ''; handleErr(e); }
+  } catch (e) { if (e.message === 'Clave incorrecta') return handleErr(e); $('grafBody').innerHTML = `<div class="card p-5 text-center"><p class="text-magenta font-bold mb-3">No se pudo leer: ${esc(e.message)}</p><button id="retryBtn" class="btn h-12 px-6 rounded-2xl bg-ambar">Reintentar</button></div>`; $('retryBtn').onclick = loadGraf; }
 }
 
 /* ============ ARRANQUE ============ */
-if (sessionStorage.getItem('clave')) { showApp(); refresh(); }  // sesión activa: nunca se muestra el bloqueo
+if (sessionStorage.getItem('clave')) {
+  try { const c = JSON.parse(localStorage.getItem('ultimo')); if (c && c.years) { S.year = c.year; applyData(c); } } catch (e) {}
+  showApp(); renderSync(); refresh(); pump();
+}  // sesión activa: nunca se muestra el bloqueo
 else showLock();
 </script>
 </body>
