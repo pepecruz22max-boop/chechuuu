@@ -2,7 +2,14 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Peña Chechu">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#0d0a22">
 <title>Peña Chechu</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -15,6 +22,8 @@ tailwind.config = { theme: { extend: {
 }}};
 </script>
 <style>
+  html { font-size: clamp(14px, 1.2vw + 11px, 18px); -webkit-text-size-adjust: 100%; }
+  * { touch-action: manipulation; }
   body { -webkit-tap-highlight-color: transparent; background: radial-gradient(900px 420px at 10% -5%, #3b1f78aa, transparent 60%), radial-gradient(700px 400px at 100% 8%, #7a1f6a66, transparent 60%), #140f2e; background-attachment: fixed; }
   h1, h2, h3, header span.text-2xl { font-family: 'Baloo 2', sans-serif; }
   .bunting { height: 26px; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='26'%3E%3Cpath d='M0 2Q60 8 120 2' stroke='%23fff' stroke-opacity='.35' fill='none'/%3E%3Cpath d='M4 4L26 5L15 24Z' fill='%23ff4fa3'/%3E%3Cpath d='M34 5L56 6L45 25Z' fill='%23ffc233'/%3E%3Cpath d='M64 6L86 6L75 25Z' fill='%232de2c4'/%3E%3Cpath d='M94 5L116 4L105 23Z' fill='%238b6cff'/%3E%3C/svg%3E") repeat-x; }
@@ -194,6 +203,16 @@ tailwind.config = { theme: { extend: {
   </nav>
 </div>
 
+<!-- NOMBRE (primer ingreso) -->
+<div id="nameModal" class="hidden fixed inset-0 z-[80] bg-black/80 flex items-center justify-center p-5">
+  <div class="card w-full max-w-sm p-6 space-y-3">
+    <h3 class="text-2xl font-bold">¡Bienvenido a la Peña! 🎶</h3>
+    <p class="text-slate-500 text-sm">¿Cómo te llamás? Se guarda en este celular y queda anotado en cada venta.</p>
+    <input id="nameInp" type="text" autocomplete="given-name" placeholder="Tu nombre" class="inp">
+    <button id="nameBtn" class="btn w-full h-14 rounded-2xl bg-ambar text-lg">Empezar</button>
+  </div>
+</div>
+
 <!-- MODAL EDICIÓN -->
 <div id="modal" class="hidden fixed inset-0 z-50 bg-black/70 flex items-end sm:items-center justify-center p-3">
   <div class="card w-full max-w-md max-h-[90vh] overflow-y-auto p-5 space-y-3">
@@ -259,7 +278,7 @@ async function withBusy(btn, fn) {
 function handleErr(e) { if (e.message === 'Clave incorrecta') showLock(e.message); else toast(e.message, 'err'); }
 
 /* ============ ACCESO ============ */
-function showApp() { $('lock').classList.add('hidden'); $('app').classList.remove('hidden'); go(S.view); }
+function showApp() { $('lock').classList.add('hidden'); $('app').classList.remove('hidden'); go(S.view); if (!vendedor()) askName(); }
 function showLock(msg) {
   sessionStorage.removeItem('clave');
   $('app').classList.add('hidden'); $('lock').classList.remove('hidden');
@@ -277,6 +296,21 @@ async function tryUnlock() {
 $('btnLock').onclick = tryUnlock;
 $('clave').addEventListener('keydown', e => { if (e.key === 'Enter') tryUnlock(); });
 $('btnSalir').onclick = () => { showLock(); $('clave').value = ''; };
+
+/* ============ NOMBRE DEL VENDEDOR (primer ingreso) ============ */
+function askName() { $('nameModal').classList.remove('hidden'); setTimeout(() => $('nameInp').focus(), 150); }
+function saveName() {
+  const n = $('nameInp').value.trim();
+  if (!n) return toast('Escribí tu nombre', 'err');
+  localStorage.setItem('vendedor', n); $('nameModal').classList.add('hidden');
+  toast('¡Hola, ' + n + '!'); renderVenta();
+}
+$('nameBtn').onclick = saveName;
+$('nameInp').addEventListener('keydown', e => { if (e.key === 'Enter') saveName(); });
+
+/* ============ SIN ZOOM ============ */
+['gesturestart', 'gesturechange', 'gestureend', 'dblclick'].forEach(ev => document.addEventListener(ev, e => e.preventDefault()));
+window.addEventListener('wheel', e => { if (e.ctrlKey) e.preventDefault(); }, { passive: false });
 
 /* ============ DATOS ============ */
 function applyData(d) {
@@ -405,7 +439,7 @@ function submit(sheet, data, okMsg) {
 }
 
 $('btnVenta').onclick = () => {
-  if (!vendedor()) { toast('Primero poné tu nombre en Ajustes', 'err'); go('cfg'); return; }
+  if (!vendedor()) { askName(); return; }
   const raw = $('manual').value.trim(), manual = raw !== '';
   const monto = manual ? Number(raw) : calcTotal();
   if (!(monto >= 0)) return toast('El monto no es válido', 'err');
