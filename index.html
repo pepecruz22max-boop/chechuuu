@@ -3,7 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<link rel="icon" href="/favicon.ico" sizes="any">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32">
+<meta name="description" content="Caja de la Peña Chechu">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="manifest" href="/manifest.webmanifest">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -62,8 +65,8 @@ tailwind.config = { theme: { extend: {
 
 <!-- APP -->
 <div id="app" class="hidden">
-  <header class="bg-[#0d0a22] text-white sticky top-0 z-30">
-    <div class="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between gap-2">
+  <header class="bg-[#0d0a22] text-white sticky top-0 z-30 pt-[env(safe-area-inset-top)]">
+    <div class="max-w-2xl mx-auto px-4 py-5 flex items-center justify-between gap-2">
       <span class="text-2xl font-bold">Peña Chechu</span>
       <div class="flex items-center gap-2">
         <button id="sync" class="h-10 px-3 rounded-full text-sm font-bold"></button>
@@ -97,35 +100,52 @@ tailwind.config = { theme: { extend: {
     <section id="v-venta" class="view hidden space-y-4">
       <div class="flex justify-between items-baseline">
         <h2 class="text-3xl font-bold">Nueva venta</h2>
-        <span class="text-sm text-slate-600">Quedan <b id="v-quedan">–</b></span>
+        <span class="text-sm text-slate-500">Quedan <b id="v-quedan">–</b></span>
       </div>
-      <button data-go="cfg" id="vendedorTag" class="text-sm font-semibold underline text-cielo"></button>
-      <div class="card p-5">
-        <p class="text-slate-500 text-sm mb-2 text-center">Porciones</p>
-        <div class="flex items-center justify-between gap-3">
-          <button id="qMinus" class="btn w-24 h-24 rounded-3xl bg-white text-5xl">−</button>
-          <span id="qty" class="text-7xl font-bold tabular-nums">1</span>
-          <button id="qPlus" class="btn w-24 h-24 rounded-3xl bg-turq text-white text-5xl">+</button>
+      <div id="stepBar" class="flex gap-2"></div>
+      <p id="stepTitle" class="text-sm font-bold text-ambar"></p>
+
+      <!-- PASO 1: porciones y precio -->
+      <div id="st1" class="space-y-4">
+        <div class="card p-5">
+          <p class="text-slate-500 text-sm mb-2 text-center">Porciones</p>
+          <div class="flex items-center justify-between gap-3">
+            <button id="qMinus" class="btn w-24 h-24 rounded-3xl bg-white text-5xl">−</button>
+            <span id="qty" class="text-7xl font-bold tabular-nums">1</span>
+            <button id="qPlus" class="btn w-24 h-24 rounded-3xl bg-turq text-5xl">+</button>
+          </div>
+          <p id="priceInfo" class="text-center text-sm text-slate-500 mt-3"></p>
         </div>
-        <p id="priceInfo" class="text-center text-sm text-slate-500 mt-3"></p>
-      </div>
-      <div class="card total p-5 text-center">
-        <p class="text-sm text-white/70">Total a cobrar</p>
-        <p id="total" class="text-5xl font-bold text-ambar">$0</p>
-      </div>
-      <div>
-        <p class="text-sm font-bold mb-2">Método de cobro</p>
-        <div id="metodos" class="grid grid-cols-3 gap-2"></div>
-      </div>
-      <button id="btnCobrado" class="btn w-full h-16 rounded-2xl text-lg"></button>
-      <button id="btnVenta" class="btn glow w-full h-20 rounded-3xl bg-ambar text-2xl">Guardar Venta</button>
-      <details class="card p-4 text-sm">
-        <summary class="cursor-pointer text-slate-600 font-semibold">Cobrar otro monto (opcional)</summary>
-        <div class="mt-3 space-y-2">
-          <input id="manual" type="number" inputmode="numeric" min="0" placeholder="Monto distinto al total" class="inp">
-          <input id="nota" type="text" placeholder="Nota (ej: descuento, redondeo)" class="inp">
+        <div class="card total p-5 text-center">
+          <p class="text-sm text-white/70">Total a cobrar</p>
+          <p id="total" class="text-5xl font-bold text-ambar">$0</p>
         </div>
-      </details>
+        <button id="btnPrecio" class="w-full text-sm font-semibold underline text-cielo py-1">Cambiar precio</button>
+        <div id="precioBox" class="hidden card p-4 space-y-2">
+          <input id="manual" type="number" inputmode="numeric" min="0" placeholder="Otro monto a cobrar ($)" class="inp">
+          <input id="nota" type="text" placeholder="Motivo (ej: descuento, redondeo)" class="inp">
+        </div>
+        <button id="btnNext1" class="btn glow w-full h-20 rounded-3xl bg-ambar text-2xl">Siguiente →</button>
+      </div>
+
+      <!-- PASO 2: método de cobro -->
+      <div id="st2" class="hidden space-y-3">
+        <div id="metodos" class="space-y-3"></div>
+        <button id="back2" class="btn w-full h-12 rounded-2xl bg-white text-sm">← Atrás</button>
+      </div>
+
+      <!-- PASO 3: pago recibido y confirmar -->
+      <div id="st3" class="hidden space-y-4">
+        <div class="card total p-5 text-center text-lg" id="sumVenta"></div>
+        <p class="text-sm font-bold">¿Se recibió el pago?</p>
+        <div class="grid grid-cols-2 gap-3">
+          <button id="pagoSi" class="btn h-20 rounded-2xl text-lg">✅ Pago recibido</button>
+          <button id="pagoNo" class="btn h-20 rounded-2xl text-lg">⏳ Todavía no</button>
+        </div>
+        <button id="btnVenta" class="btn glow w-full h-20 rounded-3xl bg-ambar text-2xl">Confirmar venta</button>
+        <button id="back3" class="btn w-full h-12 rounded-2xl bg-white text-sm">← Atrás</button>
+      </div>
+      <button data-go="cfg" id="vendedorTag" class="block mx-auto text-sm font-semibold underline text-cielo"></button>
     </section>
 
     <!-- STOCK -->
@@ -361,20 +381,31 @@ function calcTotal() {
   if (comboQty > 1 && precioCombo > 0) return Math.floor(q / comboQty) * precioCombo + (q % comboQty) * precio;
   return q * precio;
 }
+function curMonto() { const raw = $('manual').value.trim(); return raw !== '' ? Number(raw) : calcTotal(); }
+function setStep(n) { S.step = n; renderVenta(); window.scrollTo(0, 0); }
 function renderVenta() {
-  const { precio, comboQty, precioCombo } = S.cfg;
-  $('qty').textContent = S.qty; $('total').textContent = money(calcTotal());
+  const { precio, comboQty, precioCombo } = S.cfg, st = S.step = S.step || 1, monto = curMonto();
+  [1, 2, 3].forEach(i => $('st' + i).classList.toggle('hidden', i !== st));
+  $('stepBar').innerHTML = [1, 2, 3].map(i => `<div class="h-2 flex-1 rounded-full ${i <= st ? 'bg-ambar' : 'bg-white/15'}"></div>`).join('');
+  $('stepTitle').textContent = ['', 'Paso 1 de 3 · Porciones y precio', 'Paso 2 de 3 · Método de cobro', 'Paso 3 de 3 · Pago y confirmación'][st];
+  $('qty').textContent = S.qty; $('total').textContent = money(monto);
   $('priceInfo').textContent = `Individual ${money(precio)}` + (comboQty > 1 ? ` · Combo ${comboQty} por ${money(precioCombo)}` : '');
-  $('vendedorTag').textContent = vendedor() ? `Vendiendo como ${vendedor()} (cambiar)` : '⚠ Poné tu nombre en Ajustes antes de vender';
-  $('metodos').innerHTML = METODOS.map(m => `<button data-m="${m}" class="btn h-14 rounded-2xl ${m === S.metodo ? 'bg-noche text-white' : 'bg-white'}">${m}</button>`).join('');
-  $('metodos').querySelectorAll('button').forEach(b => b.onclick = () => { S.metodo = b.dataset.m; renderVenta(); });
-  const c = $('btnCobrado');
-  c.className = 'btn w-full h-16 rounded-2xl text-lg ' + (S.cobrado ? 'bg-turq text-white' : 'bg-ambar');
-  c.textContent = S.cobrado ? '✅ Cobrado' : '⏳ Pendiente de cobro';
+  $('vendedorTag').textContent = vendedor() ? `Vendiendo como ${vendedor()} (cambiar)` : '⚠ Poné tu nombre en Ajustes';
+  $('metodos').innerHTML = METODOS.map(m => `<button data-m="${m}" class="btn w-full h-20 rounded-2xl text-xl ${m === S.metodo ? 'bg-noche text-white' : 'bg-white'}">${m}</button>`).join('');
+  $('metodos').querySelectorAll('button').forEach(b => b.onclick = () => { S.metodo = b.dataset.m; setStep(3); });
+  $('sumVenta').innerHTML = `<b>${S.qty}</b> porción${S.qty > 1 ? 'es' : ''} · <b>${esc(S.metodo)}</b><br><span class="text-4xl font-bold text-ambar">${money(monto)}</span>`;
+  $('pagoSi').className = 'btn h-20 rounded-2xl text-lg ' + (S.cobrado ? 'bg-turq' : 'bg-white');
+  $('pagoNo').className = 'btn h-20 rounded-2xl text-lg ' + (!S.cobrado ? 'bg-ambar' : 'bg-white');
 }
+function resetVenta() { S.qty = 1; S.cobrado = true; S.metodo = 'Efectivo'; S.step = 1; $('manual').value = ''; $('nota').value = ''; $('precioBox').classList.add('hidden'); }
 $('qPlus').onclick = () => { S.qty++; renderVenta(); };
 $('qMinus').onclick = () => { if (S.qty > 1) S.qty--; renderVenta(); };
-$('btnCobrado').onclick = () => { S.cobrado = !S.cobrado; renderVenta(); };
+$('manual').oninput = renderVenta;
+$('btnPrecio').onclick = () => { $('precioBox').classList.toggle('hidden'); if (!$('precioBox').classList.contains('hidden')) $('manual').focus(); };
+$('btnNext1').onclick = () => { if (!(curMonto() >= 0)) return toast('El monto no es válido', 'err'); setStep(2); };
+$('back2').onclick = () => setStep(1); $('back3').onclick = () => setStep(2);
+$('pagoSi').onclick = () => { S.cobrado = true; renderVenta(); };
+$('pagoNo').onclick = () => { S.cobrado = false; renderVenta(); };
 
 /* ============ COLA DE ENVÍO: guarda al instante y sincroniza en segundo plano ============ */
 const Q = { list: JSON.parse(localStorage.getItem('cola') || '[]'), busy: false, err: '' };
@@ -440,12 +471,11 @@ function submit(sheet, data, okMsg) {
 
 $('btnVenta').onclick = () => {
   if (!vendedor()) { askName(); return; }
-  const raw = $('manual').value.trim(), manual = raw !== '';
-  const monto = manual ? Number(raw) : calcTotal();
+  const manual = $('manual').value.trim() !== '', monto = curMonto();
   if (!(monto >= 0)) return toast('El monto no es válido', 'err');
   if (S.qty > S.stock && !confirm(`Solo quedan ${S.stock} en stock. ¿Registrar igual?`)) return;
   const ok = submit('Ventas', { cantidad: S.qty, tipo: manual ? 'Monto manual' : 'Precio lista', monto, metodo: S.metodo, cobrado: S.cobrado ? 'Sí' : 'No', vendedor: vendedor(), nota: $('nota').value.trim() }, '¡Venta guardada! ' + money(monto));
-  if (ok) { S.qty = 1; S.cobrado = true; $('manual').value = ''; $('nota').value = ''; renderVenta(); }
+  if (ok) { resetVenta(); go('inicio'); }
 };
 $('btnCompra').onclick = () => {
   const insumo = $('c-insumo').value.trim(), costo = $('c-costo').value;
@@ -536,13 +566,13 @@ async function loadGraf() {
   try {
     const V = await getList('Ventas');
     if (!V.length) { $('grafBody').innerHTML = '<p class="card p-6 text-center text-slate-500">Todavía no hay ventas en este año.</p>'; return; }
-    const dias = Object.entries(group(V, r => r.fecha, r => Number(r.monto) || 0)).sort().slice(-14).map(([k, v]) => ({ l: k.slice(8) + '/' + k.slice(5, 7), v }));
+    const tam = Object.entries(group(V, r => Number(r.cantidad) >= 4 ? '4+' : String(r.cantidad), () => 1)).sort().map(([k, v]) => ({ l: k + ' porc.', v }));
     const horas = Object.entries(group(V, r => String(r.hora).slice(0, 2), r => Number(r.cantidad) || 0)).sort().map(([k, v]) => ({ l: k + 'h', v }));
     const metodos = Object.entries(group(V, r => r.metodo, r => Number(r.monto) || 0)).map(([l, v]) => ({ l, v })).sort((a, b) => b.v - a.v);
     const vend = Object.entries(group(V, r => r.vendedor || 'Sin nombre', r => Number(r.cantidad) || 0)).map(([l, v]) => ({ l, v })).sort((a, b) => b.v - a.v);
     const d = S.data, ab = [{ l: 'Recaudado', v: d.recaudado }, { l: 'Costos', v: d.costoTotal }, { l: 'Ganancia', v: Math.max(d.ganancia, 0) }];
     $('grafBody').innerHTML = [
-      ['Recaudado por día (últimos 14 días con ventas, $)', cols(dias, '#ffc233')],
+      ['Cantidad de ventas según porciones', cols(tam, '#ffc233')],
       ['Porciones vendidas por hora', cols(horas, '#ff4fa3')],
       ['Cobros por método ($)', hbars(metodos, '#2de2c4', money)],
       ['Porciones vendidas por vendedor', hbars(vend, '#8b6cff')],
