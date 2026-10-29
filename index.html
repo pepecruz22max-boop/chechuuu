@@ -3,239 +3,307 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#14532d">
-<title>Ensalada Scout · Feria</title>
+<meta name="theme-color" content="#1a1033">
+<title>Peña Chechu</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.tailwindcss.com"></script>
 <script>
-tailwind.config = { theme: { extend: { colors: {
-  pino: '#14532d', hoja: '#16a34a', sandia: '#e11d48', menta: '#f0fdf4', ink: '#1c2b22'
-}}}};
+tailwind.config = { theme: { extend: {
+  fontFamily: { sans: ['"Bricolage Grotesque"', 'system-ui', 'sans-serif'] },
+  colors: { noche: '#1a1033', magenta: '#e6197a', ambar: '#ffb400', turq: '#00a99b', cielo: '#3b6cf6', lila: '#f3effc' }
+}}};
 </script>
 <style>
-  body { -webkit-tap-highlight-color: transparent; }
-  .pb-safe { padding-bottom: calc(env(safe-area-inset-bottom, 0px) + .25rem); }
-  input, select { font-size: 16px; } /* evita zoom en iOS */
+  body { -webkit-tap-highlight-color: transparent; background: #f3effc; }
+  .poncho { height: 10px; background: repeating-linear-gradient(90deg,#e6197a 0 24px,#ffb400 0 48px,#00a99b 0 72px,#3b6cf6 0 96px); }
+  .card { background: #fff; border: 2px solid #1a1033; border-radius: 1.25rem; box-shadow: 4px 4px 0 #1a1033; }
+  .btn { border: 2px solid #1a1033; box-shadow: 3px 3px 0 #1a1033; transition: transform .08s, box-shadow .08s; font-weight: 800; }
+  .btn:active { transform: translate(3px,3px); box-shadow: 0 0 0 #1a1033; }
+  .btn:disabled { opacity: .6; }
+  .inp { width: 100%; height: 3.5rem; padding: 0 1rem; border: 2px solid #1a1033; border-radius: 1rem; background: #fff; font-size: 16px; outline: none; }
+  .inp:focus { box-shadow: 3px 3px 0 #ffb400; }
+  .pb-safe { padding-bottom: env(safe-area-inset-bottom, 0px); }
 </style>
 </head>
-<body class="bg-menta text-ink min-h-screen">
+<body class="font-sans text-noche min-h-screen">
 
-<!-- Toast -->
-<div id="toast" class="fixed top-3 inset-x-3 z-50 pointer-events-none flex justify-center"></div>
+<div id="toast" class="fixed top-3 inset-x-3 z-[60] pointer-events-none flex flex-col items-center gap-2"></div>
 
-<!-- BLOQUEO -->
-<section id="lock" class="min-h-screen flex items-center justify-center p-6 bg-pino">
-  <div class="w-full max-w-sm bg-white rounded-3xl p-8 shadow-xl">
-    <div class="text-5xl mb-3">🍓</div>
-    <h1 class="text-2xl font-extrabold">Ensalada de frutas</h1>
-    <p class="text-slate-500 mb-6">Ingresá la clave del grupo para continuar.</p>
-    <input id="clave" type="password" autocomplete="current-password" placeholder="Clave de acceso"
-      class="w-full h-14 px-4 rounded-2xl border-2 border-slate-200 focus:border-hoja outline-none mb-3">
-    <p id="lockErr" class="text-sandia text-sm mb-3 hidden"></p>
-    <button id="btnLock" class="w-full h-14 rounded-2xl bg-hoja text-white font-bold text-lg active:scale-95 transition disabled:opacity-60">Entrar</button>
+<!-- BLOQUEO (oculto hasta que el JS decida) -->
+<section id="lock" class="hidden min-h-screen flex items-center justify-center p-6 bg-noche">
+  <div class="card w-full max-w-sm p-8">
+    <h1 class="text-4xl font-extrabold leading-none">Peña<br>Chechu</h1>
+    <div class="poncho rounded-full my-4"></div>
+    <p class="text-slate-600 mb-5">Ingresá la clave del grupo.</p>
+    <input id="clave" type="password" autocomplete="current-password" placeholder="Clave de acceso" class="inp mb-3">
+    <p id="lockErr" class="text-magenta font-semibold text-sm mb-3 hidden"></p>
+    <button id="btnLock" class="btn w-full h-14 rounded-2xl bg-ambar text-lg">Entrar</button>
   </div>
 </section>
 
 <!-- APP -->
 <div id="app" class="hidden">
-  <header class="bg-pino text-white px-5 py-4 flex items-center justify-between sticky top-0 z-30">
-    <span class="font-extrabold text-lg">🍓 Feria Scout</span>
-    <button id="btnRefresh" class="h-10 px-4 rounded-full bg-white/15 text-sm font-semibold active:scale-95">Actualizar</button>
+  <header class="bg-noche text-white sticky top-0 z-30">
+    <div class="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between gap-2">
+      <span class="text-2xl font-extrabold">Peña Chechu</span>
+      <div class="flex items-center gap-2">
+        <select id="year" class="h-10 rounded-full bg-white/15 text-white font-bold px-3 text-sm outline-none"></select>
+        <button id="btnRefresh" class="h-10 w-10 rounded-full bg-white/15 font-bold" title="Actualizar">↻</button>
+      </div>
+    </div>
+    <div class="poncho"></div>
   </header>
 
-  <main class="max-w-2xl mx-auto p-4 pb-28">
+  <main class="max-w-2xl mx-auto p-4 pb-32">
 
     <!-- INICIO -->
     <section id="v-inicio" class="view space-y-4">
-      <button data-go="venta" class="w-full rounded-3xl bg-sandia text-white py-10 text-3xl font-extrabold shadow-lg active:scale-[.98] transition">+ Registrar Venta</button>
-      <div class="grid grid-cols-2 gap-3">
-        <div class="col-span-2 bg-white rounded-2xl p-5 shadow-sm">
-          <p class="text-slate-500 text-sm">Ensaladas disponibles</p>
-          <p id="m-stock" class="text-5xl font-extrabold text-pino">–</p>
-        </div>
-        <div class="bg-white rounded-2xl p-5 shadow-sm">
-          <p class="text-slate-500 text-sm">Recaudado hoy</p>
-          <p id="m-rec" class="text-2xl font-extrabold">–</p>
-          <p id="m-pend" class="text-xs text-slate-400 mt-1"></p>
-        </div>
-        <div class="bg-white rounded-2xl p-5 shadow-sm">
-          <p class="text-slate-500 text-sm">Ventas de hoy</p>
-          <p id="m-ventas" class="text-2xl font-extrabold">–</p>
-        </div>
-        <div class="col-span-2 bg-white rounded-2xl p-5 shadow-sm flex justify-between items-center">
-          <span class="text-slate-500 text-sm">Costo por porción</span>
-          <span id="m-costo" class="font-bold">–</span>
-        </div>
+      <button data-go="venta" class="btn w-full rounded-3xl bg-magenta text-white py-10 text-3xl">+ Registrar Venta</button>
+      <div class="card p-5 border-l-[10px] border-l-turq">
+        <p class="text-slate-500 text-sm">Porciones disponibles</p>
+        <p id="m-stock" class="text-6xl font-extrabold">–</p>
       </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div class="card p-4"><p class="text-slate-500 text-sm">Recaudado hoy</p><p id="m-rec" class="text-2xl font-extrabold">–</p></div>
+        <div class="card p-4"><p class="text-slate-500 text-sm">Ventas hoy</p><p id="m-ventas" class="text-2xl font-extrabold">–</p></div>
+        <div class="card p-4"><p class="text-slate-500 text-sm">Recaudado <span class="yr"></span></p><p id="m-anio" class="text-2xl font-extrabold">–</p><p id="m-pend" class="text-xs text-magenta font-semibold"></p></div>
+        <div class="card p-4"><p class="text-slate-500 text-sm">Ganancia <span class="yr"></span></p><p id="m-gan" class="text-2xl font-extrabold">–</p></div>
+      </div>
+      <button data-go="graf" class="btn w-full h-16 rounded-2xl bg-cielo text-white text-lg">📊 Ver gráficos</button>
     </section>
 
     <!-- VENTA -->
     <section id="v-venta" class="view hidden space-y-4">
       <div class="flex justify-between items-baseline">
-        <h2 class="text-2xl font-extrabold">Nueva venta</h2>
-        <span class="text-sm text-slate-500">Quedan <b id="v-quedan">–</b></span>
+        <h2 class="text-3xl font-extrabold">Nueva venta</h2>
+        <span class="text-sm text-slate-600">Quedan <b id="v-quedan">–</b></span>
       </div>
-
-      <div class="bg-white rounded-3xl p-5 shadow-sm">
-        <p class="text-slate-500 text-sm mb-2 text-center">Cantidad de porciones</p>
+      <button data-go="cfg" id="vendedorTag" class="text-sm font-semibold underline text-cielo"></button>
+      <div class="card p-5">
+        <p class="text-slate-500 text-sm mb-2 text-center">Porciones</p>
         <div class="flex items-center justify-between gap-3">
-          <button id="qMinus" class="w-24 h-24 rounded-3xl bg-slate-100 text-5xl font-bold active:scale-90 transition">−</button>
+          <button id="qMinus" class="btn w-24 h-24 rounded-3xl bg-white text-5xl">−</button>
           <span id="qty" class="text-7xl font-extrabold tabular-nums">1</span>
-          <button id="qPlus" class="w-24 h-24 rounded-3xl bg-hoja text-white text-5xl font-bold active:scale-90 transition">+</button>
+          <button id="qPlus" class="btn w-24 h-24 rounded-3xl bg-turq text-white text-5xl">+</button>
         </div>
         <p id="priceInfo" class="text-center text-sm text-slate-500 mt-3"></p>
       </div>
-
-      <div class="bg-pino text-white rounded-3xl p-5 text-center">
+      <div class="card bg-noche text-white p-5 text-center" style="background:#1a1033">
         <p class="text-sm text-white/70">Total a cobrar</p>
-        <p id="total" class="text-5xl font-extrabold">$0</p>
+        <p id="total" class="text-5xl font-extrabold text-ambar">$0</p>
       </div>
-
       <div>
-        <p class="text-sm font-semibold mb-2">Método de cobro</p>
+        <p class="text-sm font-bold mb-2">Método de cobro</p>
         <div id="metodos" class="grid grid-cols-3 gap-2"></div>
       </div>
-
-      <button id="btnCobrado" class="w-full h-16 rounded-2xl border-2 flex items-center justify-center gap-3 text-lg font-bold active:scale-[.98] transition"></button>
-
-      <button id="btnVenta" class="w-full h-20 rounded-3xl bg-sandia text-white text-2xl font-extrabold shadow-lg active:scale-[.98] transition disabled:opacity-60">Guardar Venta</button>
-
-      <details class="bg-white rounded-2xl p-4 text-sm">
-        <summary class="cursor-pointer text-slate-500 font-medium">Cobrar otro monto (opcional)</summary>
+      <button id="btnCobrado" class="btn w-full h-16 rounded-2xl text-lg"></button>
+      <button id="btnVenta" class="btn w-full h-20 rounded-3xl bg-ambar text-2xl">Guardar Venta</button>
+      <details class="card p-4 text-sm">
+        <summary class="cursor-pointer text-slate-600 font-semibold">Cobrar otro monto (opcional)</summary>
         <div class="mt-3 space-y-2">
-          <input id="manual" type="number" inputmode="numeric" min="0" placeholder="Monto distinto al total"
-            class="w-full h-12 px-4 rounded-xl border border-slate-200 outline-none focus:border-hoja">
-          <input id="nota" type="text" placeholder="Nota (ej: descuento, redondeo)"
-            class="w-full h-12 px-4 rounded-xl border border-slate-200 outline-none focus:border-hoja">
+          <input id="manual" type="number" inputmode="numeric" min="0" placeholder="Monto distinto al total" class="inp">
+          <input id="nota" type="text" placeholder="Nota (ej: descuento, redondeo)" class="inp">
         </div>
       </details>
     </section>
 
     <!-- STOCK -->
     <section id="v-stock" class="view hidden space-y-5">
-      <h2 class="text-2xl font-extrabold">Compras y producción</h2>
-
-      <div class="bg-white rounded-3xl p-5 shadow-sm space-y-3">
-        <h3 class="font-bold text-lg">Registrar compra de insumos</h3>
-        <input id="c-insumo" type="text" placeholder="Insumo (ej: Bananas)" class="w-full h-14 px-4 rounded-2xl border border-slate-200 outline-none focus:border-hoja">
+      <h2 class="text-3xl font-extrabold">Stock y costos <span class="yr"></span></h2>
+      <div class="card p-4 grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
+        <div><p class="text-slate-500">Producidas</p><p id="s-prod" class="text-2xl font-extrabold">–</p></div>
+        <div><p class="text-slate-500">Vendidas</p><p id="s-vend" class="text-2xl font-extrabold">–</p></div>
+        <div><p class="text-slate-500">Stock real</p><p id="s-disp" class="text-2xl font-extrabold text-turq">–</p></div>
+        <div><p class="text-slate-500">Costo por porción</p><p id="s-cporc" class="text-2xl font-extrabold">–</p></div>
+        <div><p class="text-slate-500">Costo total</p><p id="s-costo" class="text-2xl font-extrabold">–</p></div>
+        <div><p class="text-slate-500">Ganancia</p><p id="s-gan" class="text-2xl font-extrabold">–</p></div>
+      </div>
+      <div class="card p-5 space-y-3">
+        <h3 class="font-extrabold text-xl">Compra de insumos</h3>
+        <input id="c-insumo" type="text" placeholder="Insumo (ej: Pan, chorizo)" class="inp">
         <div class="grid grid-cols-2 gap-3">
-          <input id="c-cant" type="number" inputmode="decimal" min="0" placeholder="Cantidad" class="h-14 px-4 rounded-2xl border border-slate-200 outline-none focus:border-hoja">
-          <select id="c-unidad" class="h-14 px-3 rounded-2xl border border-slate-200 bg-white outline-none focus:border-hoja">
-            <option>kg</option><option>unidades</option><option>litros</option><option>paquetes</option>
-          </select>
+          <input id="c-cant" type="number" inputmode="decimal" min="0" placeholder="Cantidad" class="inp">
+          <select id="c-unidad" class="inp"><option>kg</option><option>unidades</option><option>litros</option><option>paquetes</option></select>
         </div>
-        <input id="c-costo" type="number" inputmode="numeric" min="0" placeholder="Costo total pagado ($)" class="w-full h-14 px-4 rounded-2xl border border-slate-200 outline-none focus:border-hoja">
-        <button id="btnCompra" class="w-full h-14 rounded-2xl bg-hoja text-white font-bold text-lg active:scale-95 transition disabled:opacity-60">Guardar compra</button>
+        <input id="c-costo" type="number" inputmode="numeric" min="0" placeholder="Costo total pagado ($)" class="inp">
+        <button id="btnCompra" class="btn w-full h-14 rounded-2xl bg-turq text-white text-lg">Guardar compra</button>
       </div>
+      <div class="card p-5 space-y-3">
+        <h3 class="font-extrabold text-xl">Producción</h3>
+        <input id="p-porc" type="number" inputmode="numeric" min="1" placeholder="Porciones elaboradas" class="inp">
+        <input id="p-nota" type="text" placeholder="Nota (opcional)" class="inp">
+        <button id="btnProd" class="btn w-full h-14 rounded-2xl bg-turq text-white text-lg">Guardar producción</button>
+      </div>
+    </section>
 
-      <div class="bg-white rounded-3xl p-5 shadow-sm space-y-3">
-        <h3 class="font-bold text-lg">Registrar producción</h3>
-        <input id="p-porc" type="number" inputmode="numeric" min="1" placeholder="Porciones elaboradas" class="w-full h-14 px-4 rounded-2xl border border-slate-200 outline-none focus:border-hoja">
-        <input id="p-nota" type="text" placeholder="Nota (opcional)" class="w-full h-14 px-4 rounded-2xl border border-slate-200 outline-none focus:border-hoja">
-        <button id="btnProd" class="w-full h-14 rounded-2xl bg-hoja text-white font-bold text-lg active:scale-95 transition disabled:opacity-60">Guardar producción</button>
+    <!-- HISTORIAL -->
+    <section id="v-hist" class="view hidden space-y-4">
+      <h2 class="text-3xl font-extrabold">Historial <span class="yr"></span></h2>
+      <div id="histTabs" class="grid grid-cols-3 gap-2"></div>
+      <div id="histList" class="space-y-3"></div>
+    </section>
+
+    <!-- GRÁFICOS -->
+    <section id="v-graf" class="view hidden space-y-4">
+      <div class="flex items-center justify-between">
+        <h2 class="text-3xl font-extrabold">Gráficos <span class="yr"></span></h2>
+        <button data-go="inicio" class="btn h-10 px-4 rounded-full bg-white text-sm">Volver</button>
       </div>
+      <div id="grafBody" class="space-y-4"></div>
+    </section>
+
+    <!-- AJUSTES -->
+    <section id="v-cfg" class="view hidden space-y-4">
+      <h2 class="text-3xl font-extrabold">Ajustes</h2>
+      <div class="card p-5 space-y-3">
+        <h3 class="font-extrabold text-xl">Quién vende</h3>
+        <p class="text-sm text-slate-500">Se guarda en este dispositivo y queda registrado en cada venta.</p>
+        <input id="cfg-vend" type="text" placeholder="Tu nombre" class="inp">
+      </div>
+      <div class="card p-5 space-y-3">
+        <h3 class="font-extrabold text-xl">Precios</h3>
+        <label class="block text-sm font-semibold">Precio individual ($)<input id="cfg-precio" type="number" inputmode="numeric" min="0" class="inp mt-1"></label>
+        <label class="block text-sm font-semibold">Porciones del combo (0 = sin combo)<input id="cfg-qty" type="number" inputmode="numeric" min="0" class="inp mt-1"></label>
+        <label class="block text-sm font-semibold">Precio del combo ($)<input id="cfg-combo" type="number" inputmode="numeric" min="0" class="inp mt-1"></label>
+      </div>
+      <button id="btnCfg" class="btn w-full h-16 rounded-2xl bg-ambar text-xl">Guardar ajustes</button>
+      <button id="btnSalir" class="btn w-full h-12 rounded-2xl bg-white text-sm">Cerrar sesión</button>
     </section>
   </main>
 
-  <!-- NAV -->
-  <nav class="fixed bottom-0 inset-x-0 bg-white border-t border-slate-200 z-30 pb-safe">
-    <div class="max-w-2xl mx-auto grid grid-cols-3">
-      <button data-go="inicio" class="nav py-3 text-sm font-semibold"><span class="block text-xl">🏠</span>Inicio</button>
-      <button data-go="venta" class="nav py-3 text-sm font-semibold"><span class="block text-xl">💵</span>Vender</button>
-      <button data-go="stock" class="nav py-3 text-sm font-semibold"><span class="block text-xl">📦</span>Stock</button>
+  <nav class="fixed bottom-0 inset-x-0 bg-white border-t-2 border-noche z-30 pb-safe">
+    <div class="max-w-2xl mx-auto grid grid-cols-5">
+      <button data-go="inicio" class="nav py-2 text-xs font-bold"><span class="block text-xl">🏠</span>Inicio</button>
+      <button data-go="venta" class="nav py-2 text-xs font-bold"><span class="block text-xl">💵</span>Vender</button>
+      <button data-go="stock" class="nav py-2 text-xs font-bold"><span class="block text-xl">📦</span>Stock</button>
+      <button data-go="hist" class="nav py-2 text-xs font-bold"><span class="block text-xl">🧾</span>Historial</button>
+      <button data-go="cfg" class="nav py-2 text-xs font-bold"><span class="block text-xl">⚙️</span>Ajustes</button>
     </div>
   </nav>
 </div>
 
+<!-- MODAL EDICIÓN -->
+<div id="modal" class="hidden fixed inset-0 z-50 bg-noche/70 flex items-end sm:items-center justify-center p-3">
+  <div class="card w-full max-w-md max-h-[90vh] overflow-y-auto p-5 space-y-3">
+    <h3 id="mTitle" class="text-2xl font-extrabold"></h3>
+    <div id="mFields" class="space-y-3"></div>
+    <div class="grid grid-cols-3 gap-2">
+      <button id="mDel" class="btn h-14 rounded-2xl bg-magenta text-white">Borrar</button>
+      <button id="mCancel" class="btn h-14 rounded-2xl bg-white">Cancelar</button>
+      <button id="mSave" class="btn h-14 rounded-2xl bg-ambar">Guardar</button>
+    </div>
+  </div>
+</div>
+
 <script>
 /* ============ CONFIGURACIÓN ============ */
-// Pegá acá la URL de tu Web App de Apps Script (termina en /exec)
 const API_URL = 'https://script.google.com/macros/s/AKfycbwNubodrcUsEfw5jjlDZraeu6xP6QyCExFaccaWTD8SGeaAAYbTQHszZxh7jpF0VJq2/exec';
 
 /* ============ ESTADO Y UTILIDADES ============ */
 const $ = id => document.getElementById(id);
 const METODOS = ['Efectivo', 'Transferencia', 'Otro'];
-const S = { cfg: { precio: 0, comboQty: 0, precioCombo: 0 }, stock: 0, qty: 1, metodo: 'Efectivo', cobrado: true };
+const S = { year: String(new Date().getFullYear()), cfg: { precio: 0, comboQty: 0, precioCombo: 0 }, stock: 0, qty: 1, metodo: 'Efectivo', cobrado: true, view: 'inicio', tab: 'Ventas', lists: {}, edit: null };
 const money = n => '$' + Number(n || 0).toLocaleString('es-AR');
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const vendedor = () => localStorage.getItem('vendedor') || '';
+
+const DEF = {
+  Ventas: { titulo: 'Ventas', uno: 'venta', f: [['fecha', 'Fecha', 'date'], ['hora', 'Hora', 'time'], ['cantidad', 'Porciones', 'number'], ['monto', 'Monto ($)', 'number'], ['metodo', 'Método', 'select:Efectivo,Transferencia,Otro'], ['cobrado', 'Cobrado', 'select:Sí,No'], ['vendedor', 'Vendedor', 'text'], ['nota', 'Nota', 'text']] },
+  Stock_Costos: { titulo: 'Compras', uno: 'compra', f: [['fecha', 'Fecha', 'date'], ['hora', 'Hora', 'time'], ['insumo', 'Insumo', 'text'], ['cantidad', 'Cantidad', 'number'], ['unidad', 'Unidad', 'text'], ['costo', 'Costo total ($)', 'number'], ['nota', 'Nota', 'text'], ['vendedor', 'Cargó', 'text']] },
+  Produccion: { titulo: 'Producción', uno: 'lote', f: [['fecha', 'Fecha', 'date'], ['hora', 'Hora', 'time'], ['porciones', 'Porciones', 'number'], ['nota', 'Nota', 'text'], ['vendedor', 'Cargó', 'text']] }
+};
 
 function toast(msg, tipo = 'ok') {
   const el = document.createElement('div');
-  el.className = 'px-5 py-3 rounded-2xl shadow-lg text-white font-semibold max-w-sm ' + (tipo === 'ok' ? 'bg-hoja' : 'bg-sandia');
-  el.textContent = msg;
-  $('toast').appendChild(el);
-  setTimeout(() => el.remove(), 3200);
+  el.className = 'btn px-5 py-3 rounded-2xl max-w-sm text-center ' + (tipo === 'ok' ? 'bg-turq text-white' : 'bg-magenta text-white');
+  el.textContent = msg; $('toast').appendChild(el);
+  setTimeout(() => el.remove(), 3400);
 }
 
-async function api(action, data) {
+async function api(action, extra = {}) {
   const key = sessionStorage.getItem('clave') || '';
   let res;
   try {
-    res = action === 'getData'
-      ? await fetch(`${API_URL}?action=getData&key=${encodeURIComponent(key)}`)
-      : await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action, key, data }) });
-  } catch (e) {
-    throw new Error('Sin conexión con el servidor. Revisá internet y la URL del Web App.');
-  }
+    if (action === 'getData' || action === 'list') {
+      const q = new URLSearchParams({ action, key, year: S.year, ...extra });
+      res = await fetch(`${API_URL}?${q}`);
+    } else {
+      res = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action, key, year: S.year, ...extra }) });
+    }
+  } catch (e) { throw new Error('Sin conexión con el servidor. Revisá internet y la URL del Web App.'); }
   let j;
-  try { j = await res.json(); } catch (e) { throw new Error('Respuesta inválida del servidor. Revisá la implementación del Apps Script.'); }
+  try { j = await res.json(); } catch (e) { throw new Error('Respuesta inválida. Revisá la implementación del Apps Script.'); }
   if (!j.ok) throw new Error(j.error || 'Error desconocido');
   return j;
 }
 
-/* Bloquea un botón mientras se guarda (evita doble click) */
-async function withBusy(btn, label, fn) {
+async function withBusy(btn, fn) {
   if (btn.disabled) return;
   const old = btn.textContent;
   btn.disabled = true; btn.textContent = 'Guardando...';
-  try { await fn(); } catch (e) { toast(e.message, 'err'); }
+  try { await fn(); } catch (e) { handleErr(e); }
   finally { btn.disabled = false; btn.textContent = old; }
 }
+function handleErr(e) { if (e.message === 'Clave incorrecta') showLock(e.message); else toast(e.message, 'err'); }
 
 /* ============ ACCESO ============ */
-async function unlock(clave) {
-  sessionStorage.setItem('clave', clave);
-  try {
-    applyData(await api('getData'));
-    $('lock').classList.add('hidden'); $('app').classList.remove('hidden');
-    go('inicio');
-  } catch (e) {
-    sessionStorage.removeItem('clave');
-    $('lockErr').textContent = e.message; $('lockErr').classList.remove('hidden');
-  }
+function showApp() { $('lock').classList.add('hidden'); $('app').classList.remove('hidden'); go(S.view); }
+function showLock(msg) {
+  sessionStorage.removeItem('clave');
+  $('app').classList.add('hidden'); $('lock').classList.remove('hidden');
+  $('clave').disabled = false; $('btnLock').disabled = false; $('btnLock').textContent = 'Entrar';
+  if (msg) { $('lockErr').textContent = msg; $('lockErr').classList.remove('hidden'); }
 }
-$('btnLock').onclick = async () => {
+async function tryUnlock() {
   const c = $('clave').value.trim(); if (!c) return;
-  $('btnLock').disabled = true; $('btnLock').textContent = 'Verificando...';
-  await unlock(c);
-  $('btnLock').disabled = false; $('btnLock').textContent = 'Entrar';
-};
-$('clave').addEventListener('keydown', e => { if (e.key === 'Enter') $('btnLock').click(); });
+  $('clave').disabled = true; $('btnLock').disabled = true; $('btnLock').textContent = 'Verificando...';
+  $('lockErr').classList.add('hidden');
+  sessionStorage.setItem('clave', c);
+  try { applyData(await api('getData')); S.view = 'inicio'; $('clave').value = ''; showApp(); }
+  catch (e) { showLock(e.message); }
+}
+$('btnLock').onclick = tryUnlock;
+$('clave').addEventListener('keydown', e => { if (e.key === 'Enter') tryUnlock(); });
+$('btnSalir').onclick = () => { showLock(); $('clave').value = ''; };
 
 /* ============ DATOS ============ */
 function applyData(d) {
-  S.cfg = d.config; S.stock = d.stock;
-  $('m-stock').textContent = d.stock;
-  $("v-quedan").textContent = d.stock;
-  $('m-rec').textContent = money(d.recaudadoHoy);
-  $('m-pend').textContent = d.pendienteHoy > 0 ? 'Sin cobrar: ' + money(d.pendienteHoy) : '';
-  $('m-ventas').textContent = d.ventasHoy;
-  $('m-costo').textContent = d.costoPorcion ? money(d.costoPorcion) : 'Sin datos';
+  S.cfg = d.config; S.stock = d.stock; S.year = d.year; S.data = d;
+  $('year').innerHTML = d.years.map(y => `<option ${y === d.year ? 'selected' : ''}>${y}</option>`).join('');
+  document.querySelectorAll('.yr').forEach(e => e.textContent = d.year);
+  $('m-stock').textContent = d.stock; $('v-quedan').textContent = d.stock;
+  $('m-rec').textContent = money(d.recaudadoHoy); $('m-ventas').textContent = d.ventasHoy;
+  $('m-anio').textContent = money(d.recaudado);
+  $('m-pend').textContent = d.pendiente > 0 ? 'Sin cobrar: ' + money(d.pendiente) : '';
+  $('m-gan').textContent = money(d.ganancia);
+  $('s-prod').textContent = d.producidas; $('s-vend').textContent = d.vendidas; $('s-disp').textContent = d.stock;
+  $('s-cporc').textContent = money(d.costoPorcion); $('s-costo').textContent = money(d.costoTotal); $('s-gan').textContent = money(d.ganancia);
+  $('cfg-precio').value = d.config.precio; $('cfg-qty').value = d.config.comboQty; $('cfg-combo').value = d.config.precioCombo;
   renderVenta();
 }
 async function refresh() {
-  $('btnRefresh').textContent = '...';
-  try { applyData(await api('getData')); } catch (e) { toast(e.message, 'err'); }
-  $('btnRefresh').textContent = 'Actualizar';
+  $('btnRefresh').textContent = '…';
+  try { applyData(await api('getData')); S.lists = {}; if (S.view === 'hist') loadHist(); if (S.view === 'graf') loadGraf(); }
+  catch (e) { handleErr(e); }
+  $('btnRefresh').textContent = '↻';
 }
 $('btnRefresh').onclick = refresh;
+$('year').onchange = () => { S.year = $('year').value; refresh(); };
 
 /* ============ NAVEGACIÓN ============ */
 function go(v) {
+  S.view = v;
   document.querySelectorAll('.view').forEach(s => s.classList.add('hidden'));
   $('v-' + v).classList.remove('hidden');
   document.querySelectorAll('.nav').forEach(b => {
     const on = b.dataset.go === v;
-    b.classList.toggle('text-sandia', on); b.classList.toggle('text-slate-500', !on);
+    b.classList.toggle('text-magenta', on); b.classList.toggle('text-slate-500', !on);
   });
+  if (v === 'venta') renderVenta();
+  if (v === 'cfg') $('cfg-vend').value = vendedor();
+  if (v === 'hist') loadHist();
+  if (v === 'graf') loadGraf();
   window.scrollTo(0, 0);
 }
 document.querySelectorAll('[data-go]').forEach(b => b.addEventListener('click', () => go(b.dataset.go)));
@@ -248,52 +316,139 @@ function calcTotal() {
 }
 function renderVenta() {
   const { precio, comboQty, precioCombo } = S.cfg;
-  $('qty').textContent = S.qty;
-  $('total').textContent = money(calcTotal());
+  $('qty').textContent = S.qty; $('total').textContent = money(calcTotal());
   $('priceInfo').textContent = `Individual ${money(precio)}` + (comboQty > 1 ? ` · Combo ${comboQty} por ${money(precioCombo)}` : '');
-  $('metodos').innerHTML = METODOS.map(m =>
-    `<button data-m="${m}" class="h-14 rounded-2xl font-bold border-2 active:scale-95 transition ${m === S.metodo ? 'bg-pino text-white border-pino' : 'bg-white border-slate-200'}">${m}</button>`).join('');
+  $('vendedorTag').textContent = vendedor() ? `Vendiendo como ${vendedor()} (cambiar)` : '⚠ Poné tu nombre en Ajustes antes de vender';
+  $('metodos').innerHTML = METODOS.map(m => `<button data-m="${m}" class="btn h-14 rounded-2xl ${m === S.metodo ? 'bg-noche text-white' : 'bg-white'}">${m}</button>`).join('');
   $('metodos').querySelectorAll('button').forEach(b => b.onclick = () => { S.metodo = b.dataset.m; renderVenta(); });
   const c = $('btnCobrado');
-  c.className = 'w-full h-16 rounded-2xl border-2 flex items-center justify-center gap-3 text-lg font-bold active:scale-[.98] transition ' +
-    (S.cobrado ? 'bg-green-100 border-hoja text-pino' : 'bg-amber-50 border-amber-400 text-amber-800');
+  c.className = 'btn w-full h-16 rounded-2xl text-lg ' + (S.cobrado ? 'bg-turq text-white' : 'bg-ambar');
   c.textContent = S.cobrado ? '✅ Cobrado' : '⏳ Pendiente de cobro';
 }
 $('qPlus').onclick = () => { S.qty++; renderVenta(); };
 $('qMinus').onclick = () => { if (S.qty > 1) S.qty--; renderVenta(); };
 $('btnCobrado').onclick = () => { S.cobrado = !S.cobrado; renderVenta(); };
 
-$('btnVenta').onclick = () => withBusy($('btnVenta'), '', async () => {
-  const manualRaw = $('manual').value.trim();
-  const manual = manualRaw !== '';
-  const monto = manual ? Number(manualRaw) : calcTotal();
+$('btnVenta').onclick = () => withBusy($('btnVenta'), async () => {
+  if (!vendedor()) { toast('Primero poné tu nombre en Ajustes', 'err'); go('cfg'); return; }
+  const raw = $('manual').value.trim(), manual = raw !== '';
+  const monto = manual ? Number(raw) : calcTotal();
   if (!(monto >= 0)) throw new Error('El monto no es válido');
   if (S.qty > S.stock && !confirm(`Solo quedan ${S.stock} en stock. ¿Registrar igual?`)) return;
-  const d = await api('venta', { cantidad: S.qty, monto, manual, metodo: S.metodo, cobrado: S.cobrado, nota: $('nota').value.trim() });
-  applyData(d);
+  S.year = String(new Date().getFullYear());
+  const d = await api('add', { sheet: 'Ventas', data: { cantidad: S.qty, tipo: manual ? 'Monto manual' : 'Precio lista', monto, metodo: S.metodo, cobrado: S.cobrado ? 'Sí' : 'No', vendedor: vendedor(), nota: $('nota').value.trim() } });
+  S.lists = {}; applyData(d);
   S.qty = 1; S.cobrado = true; $('manual').value = ''; $('nota').value = ''; renderVenta();
-  toast('Venta guardada · ' + money(monto));
-  go('inicio');
+  toast('Venta guardada · ' + money(monto)); go('inicio');
 });
 
 /* ============ COMPRAS Y PRODUCCIÓN ============ */
-$('btnCompra').onclick = () => withBusy($('btnCompra'), '', async () => {
+$('btnCompra').onclick = () => withBusy($('btnCompra'), async () => {
   const insumo = $('c-insumo').value.trim(), costo = $('c-costo').value;
   if (!insumo || costo === '') throw new Error('Completá el insumo y el costo total');
-  applyData(await api('compra', { insumo, cantidad: $('c-cant').value, unidad: $('c-unidad').value, costo }));
-  ['c-insumo', 'c-cant', 'c-costo'].forEach(i => $(i).value = '');
-  toast('Compra guardada');
+  applyData(await api('add', { sheet: 'Stock_Costos', data: { insumo, cantidad: $('c-cant').value, unidad: $('c-unidad').value, costo, vendedor: vendedor() } }));
+  S.lists = {}; ['c-insumo', 'c-cant', 'c-costo'].forEach(i => $(i).value = ''); toast('Compra guardada');
 });
-$('btnProd').onclick = () => withBusy($('btnProd'), '', async () => {
+$('btnProd').onclick = () => withBusy($('btnProd'), async () => {
   const porciones = $('p-porc').value;
   if (!(Number(porciones) > 0)) throw new Error('Ingresá las porciones elaboradas');
-  applyData(await api('produccion', { porciones, nota: $('p-nota').value.trim() }));
-  $('p-porc').value = ''; $('p-nota').value = '';
-  toast('Producción guardada');
+  applyData(await api('add', { sheet: 'Produccion', data: { porciones, nota: $('p-nota').value.trim(), vendedor: vendedor() } }));
+  S.lists = {}; $('p-porc').value = ''; $('p-nota').value = ''; toast('Producción guardada');
 });
 
+/* ============ AJUSTES ============ */
+$('btnCfg').onclick = () => withBusy($('btnCfg'), async () => {
+  localStorage.setItem('vendedor', $('cfg-vend').value.trim());
+  applyData(await api('saveConfig', { data: { precio: $('cfg-precio').value, comboQty: $('cfg-qty').value, precioCombo: $('cfg-combo').value } }));
+  toast('Ajustes guardados');
+});
+
+/* ============ HISTORIAL (ver, editar, borrar) ============ */
+async function getList(sheet) {
+  if (!S.lists[sheet]) S.lists[sheet] = (await api('list', { sheet })).rows;
+  return S.lists[sheet];
+}
+async function loadHist() {
+  $('histTabs').innerHTML = Object.keys(DEF).map(k => `<button data-t="${k}" class="btn h-12 rounded-2xl text-sm ${k === S.tab ? 'bg-noche text-white' : 'bg-white'}">${DEF[k].titulo}</button>`).join('');
+  $('histTabs').querySelectorAll('button').forEach(b => b.onclick = () => { S.tab = b.dataset.t; loadHist(); });
+  $('histList').innerHTML = '<p class="text-center text-slate-500 py-6">Cargando...</p>';
+  try {
+    const rows = [...await getList(S.tab)].sort((a, b) => (b.fecha + b.hora).localeCompare(a.fecha + a.hora));
+    if (!rows.length) { $('histList').innerHTML = '<p class="card p-6 text-center text-slate-500">Todavía no hay registros en este año.</p>'; return; }
+    $('histList').innerHTML = rows.map(r => {
+      let t, s, m;
+      if (S.tab === 'Ventas') { t = `${r.cantidad} porc. · ${esc(r.metodo)}`; m = money(r.monto); s = esc(r.vendedor) + (r.cobrado === 'Sí' ? '' : ' · PENDIENTE') + (r.nota ? ' · ' + esc(r.nota) : ''); }
+      else if (S.tab === 'Stock_Costos') { t = esc(r.insumo); m = money(r.costo); s = `${r.cantidad || ''} ${esc(r.unidad)} · ${esc(r.vendedor)}`; }
+      else { t = `${r.porciones} porciones`; m = ''; s = esc(r.vendedor) + (r.nota ? ' · ' + esc(r.nota) : ''); }
+      return `<button data-row="${r.row}" class="card w-full text-left p-4 flex justify-between gap-3 active:translate-y-[2px]">
+        <span><span class="block font-bold">${t}</span><span class="block text-xs text-slate-500">${esc(r.fecha)} ${esc(r.hora)} · ${s}</span></span>
+        <span class="font-extrabold text-lg shrink-0">${m}</span></button>`;
+    }).join('');
+    $('histList').querySelectorAll('[data-row]').forEach(b => b.onclick = () => openEdit(rows.find(r => r.row == b.dataset.row)));
+  } catch (e) { $('histList').innerHTML = ''; handleErr(e); }
+}
+function openEdit(r) {
+  S.edit = r; const d = DEF[S.tab];
+  $('mTitle').textContent = 'Editar ' + d.uno;
+  $('mFields').innerHTML = d.f.map(([k, label, type]) => {
+    const v = esc(r[k]);
+    const input = type.startsWith('select:')
+      ? `<select data-k="${k}" class="inp mt-1">${type.slice(7).split(',').map(o => `<option ${o === r[k] ? 'selected' : ''}>${o}</option>`).join('')}</select>`
+      : `<input data-k="${k}" type="${type}" value="${v}" class="inp mt-1">`;
+    return `<label class="block text-sm font-semibold">${label}${input}</label>`;
+  }).join('');
+  $('modal').classList.remove('hidden');
+}
+const closeModal = () => $('modal').classList.add('hidden');
+$('mCancel').onclick = closeModal;
+$('mSave').onclick = () => withBusy($('mSave'), async () => {
+  const data = {}; $('mFields').querySelectorAll('[data-k]').forEach(i => data[i.dataset.k] = i.value);
+  applyData(await api('update', { sheet: S.tab, row: S.edit.row, data }));
+  S.lists = {}; closeModal(); toast('Cambios guardados'); if (S.view === 'hist') loadHist();
+});
+$('mDel').onclick = () => withBusy($('mDel'), async () => {
+  if (!confirm('¿Borrar este registro? No se puede deshacer.')) return;
+  applyData(await api('delete', { sheet: S.tab, row: S.edit.row }));
+  S.lists = {}; closeModal(); toast('Registro borrado'); if (S.view === 'hist') loadHist();
+});
+
+/* ============ GRÁFICOS ============ */
+function cols(items, color) {
+  const max = Math.max(...items.map(i => i.v), 1);
+  return `<div class="overflow-x-auto"><div class="flex items-end gap-2 h-44 min-w-full pt-5">${items.map(i =>
+    `<div class="flex flex-col items-center justify-end h-full w-10 shrink-0"><span class="text-[10px] font-bold">${i.v}</span>
+     <div class="w-8 rounded-t-lg border-2 border-noche" style="height:${Math.max(i.v / max * 85, 3)}%;background:${color}"></div>
+     <span class="text-[10px] text-slate-500 mt-1">${esc(i.l)}</span></div>`).join('')}</div></div>`;
+}
+function hbars(items, color, fmt = x => x) {
+  const max = Math.max(...items.map(i => i.v), 1);
+  return items.map(i => `<div class="mb-2"><div class="flex justify-between text-sm font-semibold"><span>${esc(i.l)}</span><span>${fmt(i.v)}</span></div>
+    <div class="h-4 rounded-full border-2 border-noche bg-white overflow-hidden"><div class="h-full" style="width:${i.v / max * 100}%;background:${color}"></div></div></div>`).join('');
+}
+const group = (rows, keyFn, valFn) => { const m = {}; rows.forEach(r => { const k = keyFn(r); m[k] = (m[k] || 0) + valFn(r); }); return m; };
+async function loadGraf() {
+  $('grafBody').innerHTML = '<p class="text-center text-slate-500 py-6">Cargando...</p>';
+  try {
+    const V = await getList('Ventas');
+    if (!V.length) { $('grafBody').innerHTML = '<p class="card p-6 text-center text-slate-500">Todavía no hay ventas en este año.</p>'; return; }
+    const dias = Object.entries(group(V, r => r.fecha, r => Number(r.monto) || 0)).sort().slice(-14).map(([k, v]) => ({ l: k.slice(8) + '/' + k.slice(5, 7), v }));
+    const horas = Object.entries(group(V, r => String(r.hora).slice(0, 2), r => Number(r.cantidad) || 0)).sort().map(([k, v]) => ({ l: k + 'h', v }));
+    const metodos = Object.entries(group(V, r => r.metodo, r => Number(r.monto) || 0)).map(([l, v]) => ({ l, v })).sort((a, b) => b.v - a.v);
+    const vend = Object.entries(group(V, r => r.vendedor || 'Sin nombre', r => Number(r.cantidad) || 0)).map(([l, v]) => ({ l, v })).sort((a, b) => b.v - a.v);
+    const d = S.data, ab = [{ l: 'Recaudado', v: d.recaudado }, { l: 'Costos', v: d.costoTotal }, { l: 'Ganancia', v: Math.max(d.ganancia, 0) }];
+    $('grafBody').innerHTML = [
+      ['Recaudado por día (últimos 14 días con ventas, $)', cols(dias, '#ffb400')],
+      ['Porciones vendidas por hora', cols(horas, '#e6197a')],
+      ['Cobros por método ($)', hbars(metodos, '#00a99b', money)],
+      ['Porciones vendidas por vendedor', hbars(vend, '#3b6cf6')],
+      ['Recaudado vs. costos ($)', hbars(ab, '#1a1033', money)]
+    ].map(([t, h]) => `<div class="card p-4"><h3 class="font-extrabold mb-2">${t}</h3>${h}</div>`).join('');
+  } catch (e) { $('grafBody').innerHTML = ''; handleErr(e); }
+}
+
 /* ============ ARRANQUE ============ */
-if (sessionStorage.getItem('clave')) unlock(sessionStorage.getItem('clave'));
+if (sessionStorage.getItem('clave')) { showApp(); refresh(); }  // sesión activa: nunca se muestra el bloqueo
+else showLock();
 </script>
 </body>
 </html>
