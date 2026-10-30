@@ -171,6 +171,7 @@ tailwind.config = { theme: { extend: {
       </div>
       <div class="card p-5 space-y-3">
         <h3 class="font-bold text-xl">Producción</h3>
+        <button id="btnContador" class="btn w-full h-16 rounded-2xl bg-cielo text-lg">🔢 Abrir contador</button>
         <input id="p-porc" type="number" inputmode="numeric" min="1" placeholder="Porciones elaboradas" class="inp">
         <input id="p-nota" type="text" placeholder="Nota (opcional)" class="inp">
         <button id="btnProd" class="btn w-full h-14 rounded-2xl bg-turq text-white text-lg">Guardar producción</button>
@@ -221,6 +222,32 @@ tailwind.config = { theme: { extend: {
       <button data-go="cfg" class="nav py-2 text-xs font-bold"><span class="block text-xl">⚙️</span>Ajustes</button>
     </div>
   </nav>
+</div>
+
+<!-- CONTADOR PANTALLA COMPLETA -->
+<div id="contador" class="hidden fixed inset-0 z-[55] flex flex-col px-4 pt-[calc(env(safe-area-inset-top)+1rem)] pb-[calc(env(safe-area-inset-bottom)+1rem)]" style="background:#140f2e">
+  <div class="flex justify-between items-center">
+    <h2 class="text-2xl font-bold">Contador de producción</h2>
+    <button id="cClose" class="btn h-11 px-5 rounded-full bg-white text-sm">Cerrar</button>
+  </div>
+  <div class="flex-1 flex flex-col items-center justify-center">
+    <p class="text-slate-500">Porciones contadas</p>
+    <p id="cNum" class="font-bold tabular-nums leading-none text-ambar" style="font-size:clamp(6rem,38vw,14rem)">0</p>
+  </div>
+  <div class="grid grid-cols-4 gap-2 mb-3">
+    <button data-c="-10" class="btn h-14 rounded-2xl bg-white text-lg">−10</button>
+    <button data-c="-5" class="btn h-14 rounded-2xl bg-white text-lg">−5</button>
+    <button data-c="5" class="btn h-14 rounded-2xl bg-white text-lg">+5</button>
+    <button data-c="10" class="btn h-14 rounded-2xl bg-white text-lg">+10</button>
+  </div>
+  <div class="grid grid-cols-[1fr_2fr] gap-3 mb-3">
+    <button id="cMinus" class="btn h-32 rounded-3xl bg-white text-6xl">−</button>
+    <button id="cPlus" class="btn h-32 rounded-3xl bg-turq text-7xl">+</button>
+  </div>
+  <div class="grid grid-cols-3 gap-2">
+    <button id="cReset" class="btn h-16 rounded-2xl bg-white">Reiniciar</button>
+    <button id="cSave" class="btn glow col-span-2 h-16 rounded-2xl bg-ambar text-xl">Guardar producción</button>
+  </div>
 </div>
 
 <!-- NOMBRE (primer ingreso) -->
@@ -488,6 +515,32 @@ $('btnProd').onclick = () => {
   if (!(Number(porciones) > 0)) return toast('Ingresá las porciones elaboradas', 'err');
   if (submit('Produccion', { porciones, nota: $('p-nota').value.trim(), vendedor: vendedor() }, '¡Producción guardada!')) { $('p-porc').value = ''; $('p-nota').value = ''; }
 };
+
+/* ============ CONTADOR DE PRODUCCIÓN ============ */
+const C = { n: Number(localStorage.getItem('contador')) || 0, wake: null };
+function renderC() {
+  $('cNum').textContent = C.n; localStorage.setItem('contador', C.n);
+  $('btnContador').textContent = C.n > 0 ? `🔢 Abrir contador (${C.n} en curso)` : '🔢 Abrir contador';
+}
+function addC(d) { C.n = Math.max(0, C.n + d); renderC(); if (navigator.vibrate) navigator.vibrate(12); }
+async function openC() {
+  $('contador').classList.remove('hidden'); document.body.style.overflow = 'hidden'; renderC();
+  try { C.wake = await navigator.wakeLock.request('screen'); } catch (e) {} // mantiene la pantalla encendida
+}
+function closeC() {
+  $('contador').classList.add('hidden'); document.body.style.overflow = '';
+  try { C.wake && C.wake.release(); } catch (e) {} C.wake = null; renderC();
+}
+$('btnContador').onclick = openC; $('cClose').onclick = closeC;
+$('cPlus').onclick = () => addC(1); $('cMinus').onclick = () => addC(-1);
+document.querySelectorAll('[data-c]').forEach(b => b.onclick = () => addC(Number(b.dataset.c)));
+$('cReset').onclick = () => { if (C.n === 0 || confirm('¿Reiniciar el conteo a 0?')) { C.n = 0; renderC(); } };
+$('cSave').onclick = () => {
+  if (!(C.n > 0)) return toast('El contador está en 0', 'err');
+  const nota = $('p-nota').value.trim();
+  if (submit('Produccion', { porciones: C.n, nota, vendedor: vendedor() }, '¡Producción guardada!')) { C.n = 0; $('p-nota').value = ''; renderC(); closeC(); }
+};
+renderC();
 
 /* ============ AJUSTES ============ */
 $('btnCfg').onclick = () => withBusy($('btnCfg'), async () => {
