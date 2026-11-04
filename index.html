@@ -58,7 +58,7 @@ tailwind.config = { theme: { extend: {
 
 <!-- PANTALLA DE CARGA -->
 <section id="splash" class="min-h-screen flex flex-col items-center justify-center gap-4 p-6 text-center">
-  <img src="/icon-192.png" alt="" class="w-24 h-24 rounded-3xl" onerror="this.style.display='none'">
+  <img src="/icon-192.png" alt="" class="w-28 h-28 rounded-full" onerror="this.style.display='none'">
   <h1 class="text-3xl font-bold">Peña Chechu</h1>
   <div id="splashSpin" class="w-8 h-8 rounded-full border-4 border-white/20 border-t-ambar animate-spin"></div>
   <p id="splashMsg" class="text-slate-500 text-sm">Cargando…</p>
@@ -68,6 +68,7 @@ tailwind.config = { theme: { extend: {
 <!-- BLOQUEO (oculto hasta que el JS decida) -->
 <section id="lock" class="hidden min-h-screen flex items-center justify-center p-6">
   <div class="card w-full max-w-sm p-8">
+    <img src="/icon-192.png" alt="" class="w-20 h-20 rounded-full mb-3" onerror="this.style.display='none'">
     <h1 class="text-4xl font-bold leading-none">Peña<br>Chechu</h1>
     <div class="bunting my-3 -mx-2"></div>
     <p class="text-slate-600 mb-5">Ingresá la clave del grupo.</p>
@@ -81,7 +82,7 @@ tailwind.config = { theme: { extend: {
 <div id="app" class="hidden">
   <header class="bg-[#0d0a22] text-white sticky top-0 z-30 pt-[env(safe-area-inset-top)]">
     <div class="max-w-2xl mx-auto px-4 py-5 flex items-center justify-between gap-2">
-      <span class="text-2xl font-bold">Peña Chechu</span>
+      <span class="text-2xl font-bold flex items-center gap-2"><img src="/icon-192.png" alt="" class="w-9 h-9 rounded-full" onerror="this.style.display='none'">Peña Chechu</span>
       <div class="flex items-center gap-2">
         <button id="sync" class="h-10 px-3 rounded-full text-sm font-bold"></button>
         <select id="year" class="h-10 rounded-full bg-white/15 text-white font-bold px-3 text-sm outline-none"></select>
@@ -224,6 +225,7 @@ tailwind.config = { theme: { extend: {
         <label class="block text-sm font-semibold">Precio del combo ($)<input id="cfg-combo" type="number" inputmode="numeric" min="0" class="inp mt-1"></label>
       </div>
       <button id="btnCfg" class="btn w-full h-16 rounded-2xl bg-ambar text-xl">Guardar ajustes</button>
+      <button id="btnTuto" class="btn w-full h-12 rounded-2xl bg-white text-sm">📲 Instalar como app</button>
       <button id="btnSalir" class="btn w-full h-12 rounded-2xl bg-white text-sm">Cerrar sesión</button>
     </section>
   </main>
@@ -262,6 +264,32 @@ tailwind.config = { theme: { extend: {
   <div class="grid grid-cols-3 gap-2">
     <button id="cReset" class="btn h-16 rounded-2xl bg-white">Reiniciar</button>
     <button id="cSave" class="btn glow col-span-2 h-16 rounded-2xl bg-ambar text-xl">Guardar producción</button>
+  </div>
+</div>
+
+<!-- TUTORIAL INSTALAR APP -->
+<div id="tuto" class="hidden fixed inset-0 z-[90] overflow-y-auto" style="background:#140f2e">
+  <div class="max-w-md mx-auto px-5 pt-[calc(env(safe-area-inset-top)+1.5rem)] pb-[calc(env(safe-area-inset-bottom)+1.5rem)] space-y-4">
+    <img src="/icon-192.png" alt="" class="w-20 h-20 rounded-full mx-auto" onerror="this.style.display='none'">
+    <h2 class="text-3xl font-bold text-center">Instalá la app</h2>
+    <p class="text-slate-500 text-center text-sm">Se abre a pantalla completa, con su ícono propio, y funciona mejor y más rápido. Son 20 segundos.</p>
+    <div id="tutoTabs" class="grid grid-cols-3 gap-2"></div>
+    <div id="tutoSteps" class="space-y-3"></div>
+    <button id="tutoInstall" class="hidden btn glow w-full h-16 rounded-2xl bg-ambar text-xl">📲 Instalar ahora</button>
+    <button id="tutoWeb" class="btn w-full h-14 rounded-2xl bg-white">Continuar en web</button>
+    <label class="flex items-center justify-center gap-2 text-sm text-slate-500"><input id="tutoNo" type="checkbox" class="w-5 h-5"> No volver a mostrar</label>
+  </div>
+</div>
+
+<!-- CERRAR SESIÓN -->
+<div id="logoutModal" class="hidden fixed inset-0 z-[85] bg-black/80 flex items-center justify-center p-5">
+  <div class="card w-full max-w-sm p-6 space-y-3">
+    <h3 class="text-2xl font-bold">Cerrar sesión</h3>
+    <p class="text-slate-500 text-sm">¿Querés seguir guardando tus datos en este dispositivo? (tu nombre de vendedor y los últimos datos, para abrir más rápido)</p>
+    <p id="logoutWarn" class="hidden text-sm font-bold text-magenta"></p>
+    <button id="loKeep" class="btn w-full h-14 rounded-2xl bg-ambar">Sí, conservar mis datos</button>
+    <button id="loWipe" class="btn w-full h-14 rounded-2xl bg-white">No, borrar todo</button>
+    <button id="loCancel" class="btn w-full h-12 rounded-2xl bg-white text-sm">Cancelar</button>
   </div>
 </div>
 
@@ -340,7 +368,7 @@ async function withBusy(btn, fn) {
 function handleErr(e) { if (e.message === 'Clave incorrecta') showLock(e.message); else toast(e.message, 'err'); }
 
 /* ============ ACCESO ============ */
-function showApp() { $('splash').classList.add('hidden'); $('lock').classList.add('hidden'); $('app').classList.remove('hidden'); go(S.view); if (!vendedor()) askName(); }
+function showApp() { $('splash').classList.add('hidden'); $('lock').classList.add('hidden'); $('app').classList.remove('hidden'); go(S.view); if (!maybeTuto() && !vendedor()) askName(); }
 function showLock(msg) {
   sessionStorage.removeItem('clave'); localStorage.removeItem('claveGuardada'); $('splash').classList.add('hidden');
   $('app').classList.add('hidden'); $('lock').classList.remove('hidden');
@@ -357,7 +385,19 @@ async function tryUnlock() {
 }
 $('btnLock').onclick = tryUnlock;
 $('clave').addEventListener('keydown', e => { if (e.key === 'Enter') tryUnlock(); });
-$('btnSalir').onclick = () => { showLock(); $('clave').value = ''; };
+$('btnSalir').onclick = () => {
+  const n = Q.list.length, w = $('logoutWarn');
+  w.textContent = n ? `Hay ${n} registro${n > 1 ? 's' : ''} sin enviar: se conservan hasta que se envíen.` : '';
+  w.classList.toggle('hidden', !n); $('logoutModal').classList.remove('hidden');
+};
+function wipeLocal() {
+  ['vendedor', 'ultimo', 'contador'].forEach(k => localStorage.removeItem(k));
+  Object.keys(localStorage).filter(k => k.startsWith('lista:')).forEach(k => localStorage.removeItem(k));
+  C.n = 0; S.lists = {};
+}
+function logout(keep) { if (!keep) wipeLocal(); $('logoutModal').classList.add('hidden'); showLock(); $('clave').value = ''; }
+$('loKeep').onclick = () => logout(true); $('loWipe').onclick = () => logout(false);
+$('loCancel').onclick = () => $('logoutModal').classList.add('hidden');
 
 /* ============ NOMBRE DEL VENDEDOR (primer ingreso) ============ */
 function askName() { $('nameModal').classList.remove('hidden'); setTimeout(() => $('nameInp').focus(), 150); }
@@ -371,6 +411,46 @@ $('nameBtn').onclick = saveName;
 $('nameInp').addEventListener('input', () => { const n = $('nameInp').value.trim(); if (n) localStorage.setItem('vendedor', n); });
 $('cfg-vend').addEventListener('input', () => { localStorage.setItem('vendedor', $('cfg-vend').value.trim()); renderVenta(); });
 $('nameInp').addEventListener('keydown', e => { if (e.key === 'Enter') saveName(); });
+
+/* ============ TUTORIAL: INSTALAR COMO APP ============ */
+const TUTO = {
+  ios: ['Abrí esta página en <b>Safari</b>.', 'Tocá el botón <b>Compartir</b> ⬆️ (el cuadrado con la flecha, abajo en el centro).', 'Deslizá hacia abajo y elegí <b>Agregar a inicio</b>.', 'Tocá <b>Agregar</b>. Desde ahora abrila con su ícono.'],
+  android: ['Abrí esta página en <b>Chrome</b>.', 'Tocá el menú <b>⋮</b> (arriba a la derecha).', 'Elegí <b>Instalar app</b> o <b>Agregar a pantalla principal</b>.', 'Confirmá con <b>Instalar</b>. Vas a ver el ícono entre tus apps.'],
+  pc: ['Usá <b>Chrome</b> o <b>Edge</b>.', 'Buscá el ícono <b>⊕ Instalar</b> a la derecha de la barra de direcciones (o menú ⋮ → <b>Instalar Peña Chechu</b>).', 'Confirmá con <b>Instalar</b>.']
+};
+const PLAT = { ios: '🍎 iPhone', android: '🤖 Android', pc: '💻 Compu' };
+const isStandalone = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+function detectPlat() {
+  const u = navigator.userAgent;
+  if (/iPhone|iPad|iPod/.test(u) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)) return 'ios';
+  return /Android/.test(u) ? 'android' : 'pc';
+}
+function renderTuto(p) {
+  $('tutoTabs').innerHTML = Object.keys(PLAT).map(k => `<button data-p="${k}" class="btn h-12 rounded-2xl text-sm ${k === p ? 'bg-noche text-white' : 'bg-white'}">${PLAT[k]}</button>`).join('');
+  $('tutoTabs').querySelectorAll('button').forEach(b => b.onclick = () => renderTuto(b.dataset.p));
+  $('tutoSteps').innerHTML = TUTO[p].map((t, i) => `<div class="card p-4 flex gap-3 items-start"><span class="shrink-0 w-8 h-8 rounded-full bg-ambar text-[#1b1240] font-bold flex items-center justify-center">${i + 1}</span><p class="pt-1">${t}</p></div>`).join('');
+}
+function maybeTuto(force) {
+  if (!force && (isStandalone() || localStorage.getItem('tutoNo') || sessionStorage.getItem('tutoVisto'))) return false;
+  renderTuto(detectPlat()); $('tuto').classList.remove('hidden'); document.body.style.overflow = 'hidden';
+  return true;
+}
+function closeTuto() {
+  if ($('tutoNo').checked) localStorage.setItem('tutoNo', '1');
+  sessionStorage.setItem('tutoVisto', '1');
+  $('tuto').classList.add('hidden'); document.body.style.overflow = '';
+  if (!vendedor()) askName();
+}
+$('tutoWeb').onclick = closeTuto;
+$('btnTuto').onclick = () => maybeTuto(true);
+window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); S.prompt = e; $('tutoInstall').classList.remove('hidden'); });
+window.addEventListener('appinstalled', () => { $('tutoInstall').classList.add('hidden'); if (!$('tuto').classList.contains('hidden')) closeTuto(); });
+$('tutoInstall').onclick = async () => {
+  if (!S.prompt) return;
+  S.prompt.prompt(); const r = await S.prompt.userChoice; S.prompt = null; $('tutoInstall').classList.add('hidden');
+  if (r.outcome === 'accepted') closeTuto();
+};
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
 
 /* ============ SIN ZOOM ============ */
 ['gesturestart', 'gesturechange', 'gestureend', 'dblclick'].forEach(ev => document.addEventListener(ev, e => e.preventDefault()));
