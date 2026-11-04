@@ -345,7 +345,7 @@ async function api(action, extra = {}) {
   const key = sessionStorage.getItem('clave') || '';
   let res;
   try {
-    if (action === 'getData' || action === 'list') {
+    if (action === 'getData' || action === 'list' || action === 'version') {
       const q = new URLSearchParams({ action, key, year: S.year, ...extra });
       res = await fetch(`${API_URL}?${q}`);
     } else {
@@ -460,6 +460,7 @@ window.addEventListener('wheel', e => { if (e.ctrlKey) e.preventDefault(); }, { 
 function applyData(d) {
   if (!d || !Array.isArray(d.years)) throw new Error('El Apps Script está desactualizado: pegá el nuevo Codigo.gs y creá una NUEVA VERSIÓN de la implementación.');
   S.cfg = d.config; S.stock = d.stock; S.year = d.year; S.data = d; document.body.classList.remove('loading-data');
+  if (d.v !== undefined) S.ver = d.v;
   try { localStorage.setItem('ultimo', JSON.stringify(d)); } catch (e) {}
   $('year').innerHTML = d.years.map(y => `<option ${y === d.year ? 'selected' : ''}>${y}</option>`).join('');
   document.querySelectorAll('.yr').forEach(e => e.textContent = d.year);
@@ -473,14 +474,26 @@ function applyData(d) {
   $('cfg-precio').value = d.config.precio; $('cfg-qty').value = d.config.comboQty; $('cfg-combo').value = d.config.precioCombo;
   renderVenta();
 }
-async function refresh() {
+async function refresh(force) {
+  if (force === true) Object.keys(localStorage).filter(k => k.startsWith('lista:')).forEach(k => localStorage.removeItem(k));
   $('btnRefresh').textContent = '…'; busy(true);
-  try { applyData(await api('getData')); S.lists = {}; if (S.view === 'hist') loadHist(); if (S.view === 'graf') loadGraf(); }
+  try { applyData(await api('getData')); if (S.view === 'hist') loadHist(); if (S.view === 'graf') loadGraf(); }
   catch (e) { handleErr(e); }
   busy(false); $('btnRefresh').textContent = '↻';
 }
-$('btnRefresh').onclick = refresh;
+/* Chequeo liviano: solo pide un número de versión. Si no cambió nada, NO se descarga nada. */
+let lastCheck = 0;
+async function checkVersion(force) {
+  if (Q.list.length || Q.busy || !sessionStorage.getItem('clave')) return;
+  if (!force && Date.now() - lastCheck < 20000) return;
+  lastCheck = Date.now();
+  try { const r = await api('version'); if (r.v !== S.ver) await refresh(); }
+  catch (e) { if (e.message === 'Clave incorrecta') handleErr(e); }  // sin conexión: en silencio
+}
+$('btnRefresh').onclick = () => refresh(true);
 $('year').onchange = () => { S.year = $('year').value; refresh(); };
+document.addEventListener('visibilitychange', () => { if (!document.hidden) checkVersion(); });
+window.addEventListener('online', () => checkVersion(true));
 
 /* ============ NAVEGACIÓN ============ */
 function go(v) {
@@ -546,12 +559,13 @@ function renderSync() {
 async function pump() {
   if (Q.busy || !Q.list.length || !sessionStorage.getItem('clave')) return;
   Q.busy = true; Q.err = ''; renderSync();
+  const prev0 = S.ver, touched = new Set();
   while (Q.list.length) {
     const it = Q.list[0];
     try {
       const r = await api('add', { sheet: it.sheet, data: { ...it.data, cid: it.cid } });
-      Q.list.shift(); saveQ();
-      if (!Q.list.length && r.year === S.year) { applyData(r); if (S.view === 'hist') loadHist(); if (S.view === 'graf') loadGraf(); }
+      touched.add(it.sheet); Q.list.shift(); saveQ();
+      if (!Q.list.length && r.year === S.year) { applyData(r); advanceCaches(prev0, touched); if (S.view === 'hist') loadHist(); if (S.view === 'graf') loadGraf(); }
       renderSync();
     } catch (e) {
       if (e.message === 'Clave incorrecta') { Q.busy = false; showLock(e.message); return; }
@@ -651,12 +665,28 @@ $('btnCfg').onclick = () => withBusy($('btnCfg'), async () => {
 let busyN = 0;
 function busy(on) { busyN = Math.max(0, busyN + (on ? 1 : -1)); $('topBar').classList.toggle('hidden', busyN === 0); }
 const lkey = sh => `lista:${sh}:${S.year}`;
-function cachedList(sh) { try { return JSON.parse(localStorage.getItem(lkey(sh))); } catch (e) { return null; } }
-async function fetchList(sh) {
-  const y = S.year, rows = (await api('list', { sheet: sh })).rows;
-  try { localStorage.setItem(`lista:${sh}:${y}`, JSON.stringify(rows)); } catch (e) {}
-  return rows;
+function cachedList(sh) {
+  try { const c = JSON.parse(localStorage.getItem(lkey(sh))); if (!c) return null; return Array.isArray(c) ? { v: null, rows: c } : c; } catch (e) { return null; }
 }
+async function fetchList(sh) {
+  const y = S.year, r = await api('list', { sheet: sh }), rec = { v: r.v, rows: r.rows };
+  try { localStorage.setItem(`lista:${sh}:${y}`, JSON.stringify(rec)); } catch (e) {}
+  return rec;
+}
+/* Mantiene al día las listas guardadas sin volver a descargarlas */
+function advanceCaches(prev, touched) {
+  if (!prev) return;
+  Object.keys(localStorage).filter(k => k.startsWith('lista:')).forEach(k => {
+    if (touched.has(k.split(':')[1])) return;
+    try { const c = JSON.parse(localStorage.getItem(k)); if (c && c.v === prev) { c.v = S.ver; localStorage.setItem(k, JSON.stringify(c)); } } catch (e) {}
+  });
+}
+function patchList(sh, prev, fn) {
+  const c = cachedList(sh); if (!c || c.v !== prev) return;
+  c.rows = fn(c.rows); c.v = S.ver; try { localStorage.setItem(lkey(sh), JSON.stringify(c)); } catch (e) {}
+}
+const NUMK = ['cantidad', 'monto', 'costo', 'porciones'];
+const numify = o => Object.fromEntries(Object.entries(o).map(([k, v]) => [k, NUMK.includes(k) && v !== '' ? Number(v) : v]));
 const withPending = (sh, rows) => rows.concat(Q.list.filter(i => i.sheet === sh && String(i.data.fecha).slice(0, 4) === S.year).map(i => ({ ...i.data, row: 0 })));
 const skeleton = (n, h = 'h-[4.5rem]') => Array.from({ length: n }, () => `<div class="skel ${h}"></div>`).join('');
 const fdate = f => f === nowStamp().fecha ? 'Hoy' : String(f).slice(8, 10) + '/' + String(f).slice(5, 7);
@@ -702,11 +732,13 @@ async function loadHist() {
   $('histTabs').innerHTML = Object.keys(DEF).map(k => `<button data-t="${k}" class="btn h-12 rounded-2xl text-sm ${k === S.tab ? 'bg-noche text-white' : 'bg-white'}">${DEF[k].titulo}</button>`).join('');
   $('histTabs').querySelectorAll('button').forEach(b => b.onclick = () => { S.tab = b.dataset.t; loadHist(); });
   const c = cachedList(sh);
-  renderHist(c);                      // lo guardado aparece al instante
+  renderHist(c ? c.rows : null);
+  if (c && S.ver && c.v === S.ver) return;      // nada cambió: no se descarga nada
   busy(true);
   try {
-    const rows = await fetchList(sh); // y se actualiza en segundo plano
-    if (S.view === 'hist' && S.tab === sh && S.year === y) renderHist(rows);
+    const rec = await fetchList(sh);
+    if (S.view === 'hist' && S.tab === sh && S.year === y) renderHist(rec.rows);
+    if (rec.v !== S.ver && !Q.list.length) await refresh();   // se detectó un cambio: se actualiza todo (inicio incluido)
   } catch (e) {
     if (e.message === 'Clave incorrecta') handleErr(e);
     else if (c) toast('Sin conexión: mostrando datos guardados', 'err');
@@ -731,13 +763,17 @@ $('mCancel').onclick = closeModal;
 $('mSave').onclick = () => withBusy($('mSave'), async () => {
   if (Q.list.length) throw new Error('Esperá a que termine de enviarse lo pendiente.');
   const data = {}; $('mFields').querySelectorAll('[data-k]').forEach(i => data[i.dataset.k] = i.value);
-  applyData(await api('update', { sheet: S.tab, row: S.edit.row, data }));
+  const prev = S.ver, sh = S.tab, row = S.edit.row;
+  applyData(await api('update', { sheet: sh, row, data }));
+  patchList(sh, prev, rows => rows.map(r => r.row === row ? { ...r, ...numify(data) } : r)); advanceCaches(prev, new Set([sh]));
   S.lists = {}; closeModal(); toast('Cambios guardados'); if (S.view === 'hist') loadHist();
 });
 $('mDel').onclick = () => withBusy($('mDel'), async () => {
   if (Q.list.length) throw new Error('Esperá a que termine de enviarse lo pendiente.');
   if (!confirm('¿Borrar este registro? No se puede deshacer.')) return;
-  applyData(await api('delete', { sheet: S.tab, row: S.edit.row }));
+  const prev = S.ver, sh = S.tab, row = S.edit.row;
+  applyData(await api('delete', { sheet: sh, row }));
+  patchList(sh, prev, rows => rows.filter(r => r.row !== row).map(r => r.row > row ? { ...r, row: r.row - 1 } : r)); advanceCaches(prev, new Set([sh]));
   S.lists = {}; closeModal(); toast('Registro borrado'); if (S.view === 'hist') loadHist();
 });
 
@@ -778,11 +814,13 @@ function renderGraf(V0) {
 }
 async function loadGraf() {
   const y = S.year, c = cachedList('Ventas');
-  renderGraf(c);
+  renderGraf(c ? c.rows : null);
+  if (c && S.ver && c.v === S.ver) return;      // nada cambió: no se descarga nada
   busy(true);
   try {
-    const rows = await fetchList('Ventas');
-    if (S.view === 'graf' && S.year === y) renderGraf(rows);
+    const rec = await fetchList('Ventas');
+    if (S.view === 'graf' && S.year === y) renderGraf(rec.rows);
+    if (rec.v !== S.ver && !Q.list.length) await refresh();
   } catch (e) {
     if (e.message === 'Clave incorrecta') handleErr(e);
     else if (c) toast('Sin conexión: mostrando datos guardados', 'err');
@@ -804,7 +842,7 @@ $('splashRetry').onclick = bootFresh;
 if (saved) {                                   // sesión previa: entra solo, sin pedir clave
   sessionStorage.setItem('clave', saved); renderSync();
   let cache = null; try { cache = JSON.parse(localStorage.getItem('ultimo')); } catch (e) {}
-  if (cache && cache.years) { S.year = cache.year; applyData(cache); showApp(); refresh(); pump(); }  // datos guardados al instante
+  if (cache && cache.years) { S.year = cache.year; applyData(cache); showApp(); checkVersion(true); pump(); }  // datos guardados al instante
   else { document.body.classList.add('loading-data'); bootFresh(); }                                   // pantalla de carga
 } else showLock();
 </script>
