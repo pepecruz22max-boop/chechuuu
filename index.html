@@ -44,12 +44,26 @@ tailwind.config = { theme: { extend: {
   .total { background: linear-gradient(135deg, #7c5cff, #ff4fa3); border: 0; }
   .pop { animation: pop .3s ease-out; }
   @keyframes pop { from { transform: scale(.7); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  .skel { background: linear-gradient(90deg,#2a2160 25%,#3a2f7a 50%,#2a2160 75%); background-size: 200% 100%; animation: sh 1.2s linear infinite; border-radius: 1.25rem; }
+  .loading-data .mval { color: transparent !important; width: 5rem; height: 1.5em; border-radius: .6rem; background: linear-gradient(90deg,#2a2160 25%,#3a2f7a 50%,#2a2160 75%); background-size: 200% 100%; animation: sh 1.2s linear infinite; }
+  .topbar { height: 3px; background: linear-gradient(90deg,transparent,#ffc233,transparent) no-repeat; background-size: 40% 100%; animation: slide 1s linear infinite; }
+  @keyframes sh { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+  @keyframes slide { from { background-position: -40% 0; } to { background-position: 140% 0; } }
   .pb-safe { padding-bottom: env(safe-area-inset-bottom, 0px); }
 </style>
 </head>
 <body class="font-sans text-[#f4efff] min-h-screen">
 
 <div id="toast" class="fixed top-3 inset-x-3 z-[60] pointer-events-none flex flex-col items-center gap-2"></div>
+
+<!-- PANTALLA DE CARGA -->
+<section id="splash" class="min-h-screen flex flex-col items-center justify-center gap-4 p-6 text-center">
+  <img src="/icon-192.png" alt="" class="w-24 h-24 rounded-3xl" onerror="this.style.display='none'">
+  <h1 class="text-3xl font-bold">Peña Chechu</h1>
+  <div id="splashSpin" class="w-8 h-8 rounded-full border-4 border-white/20 border-t-ambar animate-spin"></div>
+  <p id="splashMsg" class="text-slate-500 text-sm">Cargando…</p>
+  <button id="splashRetry" class="hidden btn h-12 px-6 rounded-2xl bg-ambar">Reintentar</button>
+</section>
 
 <!-- BLOQUEO (oculto hasta que el JS decida) -->
 <section id="lock" class="hidden min-h-screen flex items-center justify-center p-6">
@@ -76,6 +90,7 @@ tailwind.config = { theme: { extend: {
     </div>
     <div class="bunting"></div>
     <button id="errBar" class="hidden w-full bg-magenta text-[#1b1240] text-sm font-bold px-4 py-2 text-center"></button>
+    <div id="topBar" class="topbar hidden"></div>
   </header>
 
   <main class="max-w-2xl mx-auto p-4 pb-32">
@@ -85,13 +100,13 @@ tailwind.config = { theme: { extend: {
       <button data-go="venta" class="btn glow w-full rounded-2xl bg-ambar py-9 text-2xl">+ Registrar Venta</button>
       <div class="card p-5 border-l-4 border-l-turq">
         <p class="text-slate-500 text-sm">Porciones disponibles</p>
-        <p id="m-stock" class="text-6xl font-bold">–</p>
+        <p id="m-stock" class="mval text-6xl font-bold">–</p>
       </div>
       <div class="grid grid-cols-2 gap-3">
-        <div class="card p-4"><p class="text-slate-500 text-sm">Recaudado hoy</p><p id="m-rec" class="text-2xl font-bold">–</p></div>
-        <div class="card p-4"><p class="text-slate-500 text-sm">Ventas hoy</p><p id="m-ventas" class="text-2xl font-bold">–</p></div>
-        <div class="card p-4"><p class="text-slate-500 text-sm">Recaudado <span class="yr"></span></p><p id="m-anio" class="text-2xl font-bold">–</p><p id="m-pend" class="text-xs text-magenta font-semibold"></p></div>
-        <div class="card p-4"><p class="text-slate-500 text-sm">Ganancia <span class="yr"></span></p><p id="m-gan" class="text-2xl font-bold">–</p></div>
+        <div class="card p-4"><p class="text-slate-500 text-sm">Recaudado hoy</p><p id="m-rec" class="mval text-2xl font-bold">–</p></div>
+        <div class="card p-4"><p class="text-slate-500 text-sm">Ventas hoy</p><p id="m-ventas" class="mval text-2xl font-bold">–</p></div>
+        <div class="card p-4"><p class="text-slate-500 text-sm">Recaudado <span class="yr"></span></p><p id="m-anio" class="mval text-2xl font-bold">–</p><p id="m-pend" class="text-xs text-magenta font-semibold"></p></div>
+        <div class="card p-4"><p class="text-slate-500 text-sm">Ganancia <span class="yr"></span></p><p id="m-gan" class="mval text-2xl font-bold">–</p></div>
       </div>
       <button data-go="graf" class="btn w-full h-16 rounded-2xl bg-cielo text-white text-lg">📊 Ver gráficos</button>
     </section>
@@ -152,12 +167,12 @@ tailwind.config = { theme: { extend: {
     <section id="v-stock" class="view hidden space-y-5">
       <h2 class="text-3xl font-bold">Stock y costos <span class="yr"></span></h2>
       <div class="card p-4 grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
-        <div><p class="text-slate-500">Producidas</p><p id="s-prod" class="text-2xl font-bold">–</p></div>
-        <div><p class="text-slate-500">Vendidas</p><p id="s-vend" class="text-2xl font-bold">–</p></div>
-        <div><p class="text-slate-500">Stock real</p><p id="s-disp" class="text-2xl font-bold text-turq">–</p></div>
-        <div><p class="text-slate-500">Costo por porción</p><p id="s-cporc" class="text-2xl font-bold">–</p></div>
-        <div><p class="text-slate-500">Costo total</p><p id="s-costo" class="text-2xl font-bold">–</p></div>
-        <div><p class="text-slate-500">Ganancia</p><p id="s-gan" class="text-2xl font-bold">–</p></div>
+        <div><p class="text-slate-500">Producidas</p><p id="s-prod" class="mval text-2xl font-bold">–</p></div>
+        <div><p class="text-slate-500">Vendidas</p><p id="s-vend" class="mval text-2xl font-bold">–</p></div>
+        <div><p class="text-slate-500">Stock real</p><p id="s-disp" class="mval text-2xl font-bold text-turq">–</p></div>
+        <div><p class="text-slate-500">Costo por porción</p><p id="s-cporc" class="mval text-2xl font-bold">–</p></div>
+        <div><p class="text-slate-500">Costo total</p><p id="s-costo" class="mval text-2xl font-bold">–</p></div>
+        <div><p class="text-slate-500">Ganancia</p><p id="s-gan" class="mval text-2xl font-bold">–</p></div>
       </div>
       <div class="card p-5 space-y-3">
         <h3 class="font-bold text-xl">Compra de insumos</h3>
@@ -325,9 +340,9 @@ async function withBusy(btn, fn) {
 function handleErr(e) { if (e.message === 'Clave incorrecta') showLock(e.message); else toast(e.message, 'err'); }
 
 /* ============ ACCESO ============ */
-function showApp() { $('lock').classList.add('hidden'); $('app').classList.remove('hidden'); go(S.view); if (!vendedor()) askName(); }
+function showApp() { $('splash').classList.add('hidden'); $('lock').classList.add('hidden'); $('app').classList.remove('hidden'); go(S.view); if (!vendedor()) askName(); }
 function showLock(msg) {
-  sessionStorage.removeItem('clave');
+  sessionStorage.removeItem('clave'); localStorage.removeItem('claveGuardada'); $('splash').classList.add('hidden');
   $('app').classList.add('hidden'); $('lock').classList.remove('hidden');
   $('clave').disabled = false; $('btnLock').disabled = false; $('btnLock').textContent = 'Entrar';
   if (msg) { $('lockErr').textContent = msg; $('lockErr').classList.remove('hidden'); }
@@ -337,7 +352,7 @@ async function tryUnlock() {
   $('clave').disabled = true; $('btnLock').disabled = true; $('btnLock').textContent = 'Verificando...';
   $('lockErr').classList.add('hidden');
   sessionStorage.setItem('clave', c);
-  try { applyData(await api('getData')); pump(); S.view = 'inicio'; $('clave').value = ''; showApp(); }
+  try { applyData(await api('getData')); localStorage.setItem('claveGuardada', c); pump(); S.view = 'inicio'; $('clave').value = ''; showApp(); }
   catch (e) { showLock(e.message); }
 }
 $('btnLock').onclick = tryUnlock;
@@ -353,6 +368,8 @@ function saveName() {
   toast('¡Hola, ' + n + '!'); renderVenta();
 }
 $('nameBtn').onclick = saveName;
+$('nameInp').addEventListener('input', () => { const n = $('nameInp').value.trim(); if (n) localStorage.setItem('vendedor', n); });
+$('cfg-vend').addEventListener('input', () => { localStorage.setItem('vendedor', $('cfg-vend').value.trim()); renderVenta(); });
 $('nameInp').addEventListener('keydown', e => { if (e.key === 'Enter') saveName(); });
 
 /* ============ SIN ZOOM ============ */
@@ -362,7 +379,7 @@ window.addEventListener('wheel', e => { if (e.ctrlKey) e.preventDefault(); }, { 
 /* ============ DATOS ============ */
 function applyData(d) {
   if (!d || !Array.isArray(d.years)) throw new Error('El Apps Script está desactualizado: pegá el nuevo Codigo.gs y creá una NUEVA VERSIÓN de la implementación.');
-  S.cfg = d.config; S.stock = d.stock; S.year = d.year; S.data = d;
+  S.cfg = d.config; S.stock = d.stock; S.year = d.year; S.data = d; document.body.classList.remove('loading-data');
   try { localStorage.setItem('ultimo', JSON.stringify(d)); } catch (e) {}
   $('year').innerHTML = d.years.map(y => `<option ${y === d.year ? 'selected' : ''}>${y}</option>`).join('');
   document.querySelectorAll('.yr').forEach(e => e.textContent = d.year);
@@ -377,10 +394,10 @@ function applyData(d) {
   renderVenta();
 }
 async function refresh() {
-  $('btnRefresh').textContent = '…';
+  $('btnRefresh').textContent = '…'; busy(true);
   try { applyData(await api('getData')); S.lists = {}; if (S.view === 'hist') loadHist(); if (S.view === 'graf') loadGraf(); }
   catch (e) { handleErr(e); }
-  $('btnRefresh').textContent = '↻';
+  busy(false); $('btnRefresh').textContent = '↻';
 }
 $('btnRefresh').onclick = refresh;
 $('year').onchange = () => { S.year = $('year').value; refresh(); };
@@ -454,7 +471,7 @@ async function pump() {
     try {
       const r = await api('add', { sheet: it.sheet, data: { ...it.data, cid: it.cid } });
       Q.list.shift(); saveQ();
-      if (!Q.list.length && r.year === S.year) applyData(r);
+      if (!Q.list.length && r.year === S.year) { applyData(r); if (S.view === 'hist') loadHist(); if (S.view === 'graf') loadGraf(); }
       renderSync();
     } catch (e) {
       if (e.message === 'Clave incorrecta') { Q.busy = false; showLock(e.message); return; }
@@ -550,30 +567,74 @@ $('btnCfg').onclick = () => withBusy($('btnCfg'), async () => {
 });
 
 /* ============ HISTORIAL (ver, editar, borrar) ============ */
-async function getList(sheet) {
-  if (!S.lists[sheet]) S.lists[sheet] = (await api('list', { sheet })).rows;
-  return S.lists[sheet];
+/* ============ LISTAS: se muestra lo guardado al instante y se actualiza en segundo plano ============ */
+let busyN = 0;
+function busy(on) { busyN = Math.max(0, busyN + (on ? 1 : -1)); $('topBar').classList.toggle('hidden', busyN === 0); }
+const lkey = sh => `lista:${sh}:${S.year}`;
+function cachedList(sh) { try { return JSON.parse(localStorage.getItem(lkey(sh))); } catch (e) { return null; } }
+async function fetchList(sh) {
+  const y = S.year, rows = (await api('list', { sheet: sh })).rows;
+  try { localStorage.setItem(`lista:${sh}:${y}`, JSON.stringify(rows)); } catch (e) {}
+  return rows;
+}
+const withPending = (sh, rows) => rows.concat(Q.list.filter(i => i.sheet === sh && String(i.data.fecha).slice(0, 4) === S.year).map(i => ({ ...i.data, row: 0 })));
+const skeleton = (n, h = 'h-[4.5rem]') => Array.from({ length: n }, () => `<div class="skel ${h}"></div>`).join('');
+const fdate = f => f === nowStamp().fecha ? 'Hoy' : String(f).slice(8, 10) + '/' + String(f).slice(5, 7);
+const isCur = () => S.year === String(new Date().getFullYear());
+function empty(emoji, title, text, label, dest) {
+  return `<div class="card p-8 text-center space-y-2"><div class="text-5xl">${emoji}</div><h3 class="text-xl font-bold">${title}</h3><p class="text-slate-500 text-sm">${text}</p>${label ? `<button data-go="${dest}" class="btn h-12 px-6 rounded-2xl bg-ambar mt-2">${label}</button>` : ''}</div>`;
+}
+const bindGo = root => root.querySelectorAll('[data-go]').forEach(b => b.onclick = () => go(b.dataset.go));
+const EMPTY = {
+  Ventas: ['🎶', 'Todavía no hay ventas', 'Cuando registres la primera, va a aparecer acá.', '+ Registrar venta', 'venta'],
+  Stock_Costos: ['🛒', 'Sin compras cargadas', 'Anotá lo que gastás en insumos para conocer el costo por porción.', 'Cargar una compra', 'stock'],
+  Produccion: ['🍽️', 'Sin producción registrada', 'Registrá cada lote que preparan para llevar el stock real.', 'Registrar producción', 'stock']
+};
+const errCard = msg => `<div class="card p-5 text-center"><p class="text-magenta font-bold mb-3">No se pudo leer: ${esc(msg)}</p><button id="retryBtn" class="btn h-12 px-6 rounded-2xl bg-ambar">Reintentar</button></div>`;
+
+function renderHist(rows) {
+  const L = $('histList');
+  if (rows === null) { L.innerHTML = skeleton(4); return; }
+  rows = withPending(S.tab, rows).sort((a, b) => (b.fecha + b.hora).localeCompare(a.fecha + a.hora));
+  if (!rows.length) {
+    L.innerHTML = isCur() ? empty(...EMPTY[S.tab]) : empty('🗓️', 'No hay registros en ' + S.year, 'Elegí otro año arriba a la derecha.');
+    bindGo(L); return;
+  }
+  let head = '';
+  if (S.tab === 'Ventas') {
+    const p = rows.filter(r => r.cobrado !== 'Sí');
+    if (p.length) head = `<div class="card p-3 text-sm font-bold flex justify-between" style="border-color:#ff4fa3"><span class="text-magenta">⏳ ${p.length} pendiente${p.length > 1 ? 's' : ''} de cobro</span><span>${money(p.reduce((a, r) => a + (Number(r.monto) || 0), 0))}</span></div>`;
+  }
+  L.innerHTML = head + rows.map((r, i) => {
+    let t, s, m, pend = false;
+    if (S.tab === 'Ventas') { t = `${r.cantidad} porc. · ${esc(r.metodo)}`; m = money(r.monto); pend = r.cobrado !== 'Sí'; s = esc(r.vendedor) + (r.nota ? ' · ' + esc(r.nota) : ''); }
+    else if (S.tab === 'Stock_Costos') { t = esc(r.insumo); m = money(r.costo); s = `${r.cantidad || ''} ${esc(r.unidad)} · ${esc(r.vendedor)}`; }
+    else { t = `${r.porciones} porciones`; m = ''; s = esc(r.vendedor) + (r.nota ? ' · ' + esc(r.nota) : ''); }
+    return `<button data-i="${i}" class="card w-full text-left p-4 flex justify-between gap-3 active:translate-y-[2px]" ${pend ? 'style="border-color:#ff4fa3;border-width:2px;background:#2b1546"' : ''}>
+      <span><span class="block font-bold">${t}${pend ? ' <span class="bg-magenta text-[#1b1240] text-[10px] font-bold px-2 py-0.5 rounded-full align-middle ml-1">⏳ PENDIENTE</span>' : ''}</span>
+      <span class="block text-xs text-slate-500">${fdate(r.fecha)} · ${esc(r.hora)} · ${s}${r.row ? '' : ' · enviando…'}</span></span>
+      <span class="font-bold text-lg shrink-0 ${pend ? 'text-magenta' : ''}">${m}</span></button>`;
+  }).join('');
+  L.querySelectorAll('[data-i]').forEach(b => b.onclick = () => openEdit(rows[+b.dataset.i]));
 }
 async function loadHist() {
+  const sh = S.tab, y = S.year;
   $('histTabs').innerHTML = Object.keys(DEF).map(k => `<button data-t="${k}" class="btn h-12 rounded-2xl text-sm ${k === S.tab ? 'bg-noche text-white' : 'bg-white'}">${DEF[k].titulo}</button>`).join('');
   $('histTabs').querySelectorAll('button').forEach(b => b.onclick = () => { S.tab = b.dataset.t; loadHist(); });
-  $('histList').innerHTML = '<p class="text-center text-slate-500 py-6">Cargando...</p>';
+  const c = cachedList(sh);
+  renderHist(c);                      // lo guardado aparece al instante
+  busy(true);
   try {
-    const rows = [...await getList(S.tab)].sort((a, b) => (b.fecha + b.hora).localeCompare(a.fecha + a.hora));
-    if (!rows.length) { $('histList').innerHTML = '<p class="card p-6 text-center text-slate-500">Todavía no hay registros en este año.</p>'; return; }
-    $('histList').innerHTML = rows.map(r => {
-      let t, s, m;
-      if (S.tab === 'Ventas') { t = `${r.cantidad} porc. · ${esc(r.metodo)}`; m = money(r.monto); s = esc(r.vendedor) + (r.cobrado === 'Sí' ? '' : ' · PENDIENTE') + (r.nota ? ' · ' + esc(r.nota) : ''); }
-      else if (S.tab === 'Stock_Costos') { t = esc(r.insumo); m = money(r.costo); s = `${r.cantidad || ''} ${esc(r.unidad)} · ${esc(r.vendedor)}`; }
-      else { t = `${r.porciones} porciones`; m = ''; s = esc(r.vendedor) + (r.nota ? ' · ' + esc(r.nota) : ''); }
-      return `<button data-row="${r.row}" class="card w-full text-left p-4 flex justify-between gap-3 active:translate-y-[2px]">
-        <span><span class="block font-bold">${t}</span><span class="block text-xs text-slate-500">${esc(r.fecha)} ${esc(r.hora)} · ${s}</span></span>
-        <span class="font-bold text-lg shrink-0">${m}</span></button>`;
-    }).join('');
-    $('histList').querySelectorAll('[data-row]').forEach(b => b.onclick = () => openEdit(rows.find(r => r.row == b.dataset.row)));
-  } catch (e) { if (e.message === 'Clave incorrecta') return handleErr(e); $('histList').innerHTML = `<div class="card p-5 text-center"><p class="text-magenta font-bold mb-3">No se pudo leer: ${esc(e.message)}</p><button id="retryBtn" class="btn h-12 px-6 rounded-2xl bg-ambar">Reintentar</button></div>`; $('retryBtn').onclick = loadHist; }
+    const rows = await fetchList(sh); // y se actualiza en segundo plano
+    if (S.view === 'hist' && S.tab === sh && S.year === y) renderHist(rows);
+  } catch (e) {
+    if (e.message === 'Clave incorrecta') handleErr(e);
+    else if (c) toast('Sin conexión: mostrando datos guardados', 'err');
+    else if (S.view === 'hist') { $('histList').innerHTML = errCard(e.message); $('retryBtn').onclick = loadHist; }
+  } finally { busy(false); }
 }
 function openEdit(r) {
+  if (!r.row) return toast('Se está enviando, esperá un momento', 'err');
   S.edit = r; const d = DEF[S.tab];
   $('mTitle').textContent = 'Editar ' + d.uno;
   $('mFields').innerHTML = d.f.map(([k, label, type]) => {
@@ -614,32 +675,58 @@ function hbars(items, color, fmt = x => x) {
     <div class="h-3 rounded-full bg-white/10 overflow-hidden"><div class="h-full" style="width:${i.v / max * 100}%;background:${color}"></div></div></div>`).join('');
 }
 const group = (rows, keyFn, valFn) => { const m = {}; rows.forEach(r => { const k = keyFn(r); m[k] = (m[k] || 0) + valFn(r); }); return m; };
+function renderGraf(V0) {
+  const B = $('grafBody');
+  if (V0 === null) { B.innerHTML = skeleton(3, 'h-48'); return; }
+  const V = withPending('Ventas', V0);
+  if (!V.length) {
+    B.innerHTML = isCur() ? empty('📊', 'Todavía no hay datos para graficar', 'Los gráficos se arman solos a medida que registrás ventas.', '+ Registrar venta', 'venta') : empty('🗓️', 'No hay ventas en ' + S.year, 'Elegí otro año arriba a la derecha.');
+    bindGo(B); return;
+  }
+  const tam = Object.entries(group(V, r => Number(r.cantidad) >= 4 ? '4+' : String(r.cantidad), () => 1)).sort().map(([k, v]) => ({ l: k + ' porc.', v }));
+  const horas = Object.entries(group(V, r => String(r.hora).slice(0, 2), r => Number(r.cantidad) || 0)).sort().map(([k, v]) => ({ l: k + 'h', v }));
+  const metodos = Object.entries(group(V, r => r.metodo, r => Number(r.monto) || 0)).map(([l, v]) => ({ l, v })).sort((a, b) => b.v - a.v);
+  const vend = Object.entries(group(V, r => r.vendedor || 'Sin nombre', r => Number(r.cantidad) || 0)).map(([l, v]) => ({ l, v })).sort((a, b) => b.v - a.v);
+  const d = S.data, ab = [{ l: 'Recaudado', v: d.recaudado }, { l: 'Costos', v: d.costoTotal }, { l: 'Ganancia', v: Math.max(d.ganancia, 0) }];
+  B.innerHTML = [
+    ['Cantidad de ventas según porciones', cols(tam, '#ffc233')],
+    ['Porciones vendidas por hora', cols(horas, '#ff4fa3')],
+    ['Cobros por método ($)', hbars(metodos, '#2de2c4', money)],
+    ['Porciones vendidas por vendedor', hbars(vend, '#8b6cff')],
+    ['Recaudado vs. costos ($)', hbars(ab, '#6ea8ff', money)]
+  ].map(([t, h]) => `<div class="card p-4"><h3 class="font-bold mb-2">${t}</h3>${h}</div>`).join('');
+}
 async function loadGraf() {
-  $('grafBody').innerHTML = '<p class="text-center text-slate-500 py-6">Cargando...</p>';
+  const y = S.year, c = cachedList('Ventas');
+  renderGraf(c);
+  busy(true);
   try {
-    const V = await getList('Ventas');
-    if (!V.length) { $('grafBody').innerHTML = '<p class="card p-6 text-center text-slate-500">Todavía no hay ventas en este año.</p>'; return; }
-    const tam = Object.entries(group(V, r => Number(r.cantidad) >= 4 ? '4+' : String(r.cantidad), () => 1)).sort().map(([k, v]) => ({ l: k + ' porc.', v }));
-    const horas = Object.entries(group(V, r => String(r.hora).slice(0, 2), r => Number(r.cantidad) || 0)).sort().map(([k, v]) => ({ l: k + 'h', v }));
-    const metodos = Object.entries(group(V, r => r.metodo, r => Number(r.monto) || 0)).map(([l, v]) => ({ l, v })).sort((a, b) => b.v - a.v);
-    const vend = Object.entries(group(V, r => r.vendedor || 'Sin nombre', r => Number(r.cantidad) || 0)).map(([l, v]) => ({ l, v })).sort((a, b) => b.v - a.v);
-    const d = S.data, ab = [{ l: 'Recaudado', v: d.recaudado }, { l: 'Costos', v: d.costoTotal }, { l: 'Ganancia', v: Math.max(d.ganancia, 0) }];
-    $('grafBody').innerHTML = [
-      ['Cantidad de ventas según porciones', cols(tam, '#ffc233')],
-      ['Porciones vendidas por hora', cols(horas, '#ff4fa3')],
-      ['Cobros por método ($)', hbars(metodos, '#2de2c4', money)],
-      ['Porciones vendidas por vendedor', hbars(vend, '#8b6cff')],
-      ['Recaudado vs. costos ($)', hbars(ab, '#6ea8ff', money)]
-    ].map(([t, h]) => `<div class="card p-4"><h3 class="font-bold mb-2">${t}</h3>${h}</div>`).join('');
-  } catch (e) { if (e.message === 'Clave incorrecta') return handleErr(e); $('grafBody').innerHTML = `<div class="card p-5 text-center"><p class="text-magenta font-bold mb-3">No se pudo leer: ${esc(e.message)}</p><button id="retryBtn" class="btn h-12 px-6 rounded-2xl bg-ambar">Reintentar</button></div>`; $('retryBtn').onclick = loadGraf; }
+    const rows = await fetchList('Ventas');
+    if (S.view === 'graf' && S.year === y) renderGraf(rows);
+  } catch (e) {
+    if (e.message === 'Clave incorrecta') handleErr(e);
+    else if (c) toast('Sin conexión: mostrando datos guardados', 'err');
+    else if (S.view === 'graf') { $('grafBody').innerHTML = errCard(e.message); $('retryBtn').onclick = loadGraf; }
+  } finally { busy(false); }
 }
 
 /* ============ ARRANQUE ============ */
-if (sessionStorage.getItem('clave')) {
-  try { const c = JSON.parse(localStorage.getItem('ultimo')); if (c && c.years) { S.year = c.year; applyData(c); } } catch (e) {}
-  showApp(); renderSync(); refresh(); pump();
-}  // sesión activa: nunca se muestra el bloqueo
-else showLock();
+const saved = sessionStorage.getItem('clave') || localStorage.getItem('claveGuardada');
+async function bootFresh() {
+  $('splashMsg').textContent = 'Cargando…'; $('splashRetry').classList.add('hidden'); $('splashSpin').classList.remove('hidden');
+  try { applyData(await api('getData')); showApp(); pump(); }
+  catch (e) {
+    if (e.message === 'Clave incorrecta') return showLock(e.message);
+    $('splashSpin').classList.add('hidden'); $('splashMsg').textContent = e.message; $('splashRetry').classList.remove('hidden');
+  }
+}
+$('splashRetry').onclick = bootFresh;
+if (saved) {                                   // sesión previa: entra solo, sin pedir clave
+  sessionStorage.setItem('clave', saved); renderSync();
+  let cache = null; try { cache = JSON.parse(localStorage.getItem('ultimo')); } catch (e) {}
+  if (cache && cache.years) { S.year = cache.year; applyData(cache); showApp(); refresh(); pump(); }  // datos guardados al instante
+  else { document.body.classList.add('loading-data'); bootFresh(); }                                   // pantalla de carga
+} else showLock();
 </script>
 </body>
 </html>
