@@ -58,7 +58,7 @@ tailwind.config = { theme: { extend: {
 
 <!-- PANTALLA DE CARGA -->
 <section id="splash" class="min-h-screen flex flex-col items-center justify-center gap-4 p-6 text-center">
-  <img src="/icon-192.png" alt="" class="w-28 h-28 rounded-full" onerror="this.style.display='none'">
+  <img src="/logo-192.png" alt="" class="w-28 h-28" onerror="this.style.display='none'">
   <h1 class="text-3xl font-bold">Peña Chechu</h1>
   <div id="splashSpin" class="w-8 h-8 rounded-full border-4 border-white/20 border-t-ambar animate-spin"></div>
   <p id="splashMsg" class="text-slate-500 text-sm">Cargando…</p>
@@ -68,7 +68,7 @@ tailwind.config = { theme: { extend: {
 <!-- BLOQUEO (oculto hasta que el JS decida) -->
 <section id="lock" class="hidden min-h-screen flex items-center justify-center p-6">
   <div class="card w-full max-w-sm p-8">
-    <img src="/icon-192.png" alt="" class="w-20 h-20 rounded-full mb-3" onerror="this.style.display='none'">
+    <img src="/logo-192.png" alt="" class="w-20 h-20 mb-3" onerror="this.style.display='none'">
     <h1 class="text-4xl font-bold leading-none">Peña<br>Chechu</h1>
     <div class="bunting my-3 -mx-2"></div>
     <p class="text-slate-600 mb-5">Ingresá la clave del grupo.</p>
@@ -82,7 +82,7 @@ tailwind.config = { theme: { extend: {
 <div id="app" class="hidden">
   <header class="bg-[#0d0a22] text-white sticky top-0 z-30 pt-[env(safe-area-inset-top)]">
     <div class="max-w-2xl mx-auto px-4 py-5 flex items-center justify-between gap-2">
-      <span class="text-2xl font-bold flex items-center gap-2"><img src="/icon-192.png" alt="" class="w-9 h-9 rounded-full" onerror="this.style.display='none'">Peña Chechu</span>
+      <span class="text-2xl font-bold flex items-center gap-2"><img src="/logo-192.png" alt="" class="w-9 h-9" onerror="this.style.display='none'">Peña Chechu</span>
       <div class="flex items-center gap-2">
         <button id="sync" class="h-10 px-3 rounded-full text-sm font-bold"></button>
         <select id="year" class="h-10 rounded-full bg-white/15 text-white font-bold px-3 text-sm outline-none"></select>
@@ -270,7 +270,7 @@ tailwind.config = { theme: { extend: {
 <!-- TUTORIAL INSTALAR APP -->
 <div id="tuto" class="hidden fixed inset-0 z-[90] overflow-y-auto" style="background:#140f2e">
   <div class="max-w-md mx-auto px-5 pt-[calc(env(safe-area-inset-top)+1.5rem)] pb-[calc(env(safe-area-inset-bottom)+1.5rem)] space-y-4">
-    <img src="/icon-192.png" alt="" class="w-20 h-20 rounded-full mx-auto" onerror="this.style.display='none'">
+    <img src="/logo-192.png" alt="" class="w-20 h-20 mx-auto" onerror="this.style.display='none'">
     <h2 class="text-3xl font-bold text-center">Instalá la app</h2>
     <p class="text-slate-500 text-center text-sm">Se abre a pantalla completa, con su ícono propio, y funciona mejor y más rápido. Son 20 segundos.</p>
     <div id="tutoTabs" class="grid grid-cols-3 gap-2"></div>
