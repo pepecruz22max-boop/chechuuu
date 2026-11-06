@@ -109,6 +109,7 @@ tailwind.config = { theme: { extend: {
         <div class="card p-4"><p class="text-slate-500 text-sm">Recaudado <span class="yr"></span></p><p id="m-anio" class="mval text-2xl font-bold">–</p><p id="m-pend" class="text-xs text-magenta font-semibold"></p></div>
         <div class="card p-4"><p class="text-slate-500 text-sm">Ganancia <span class="yr"></span></p><p id="m-gan" class="mval text-2xl font-bold">–</p></div>
       </div>
+      <button data-go="pagos" id="m-pagos" class="hidden card w-full p-4 text-left font-bold" style="border-color:#ffc233"></button>
       <button data-go="graf" class="btn w-full h-16 rounded-2xl bg-cielo text-white text-lg">📊 Ver gráficos</button>
     </section>
 
@@ -194,6 +195,18 @@ tailwind.config = { theme: { extend: {
       </div>
     </section>
 
+    <!-- PAGOS -->
+    <section id="v-pagos" class="view hidden space-y-4">
+      <div class="flex items-center justify-between">
+        <h2 class="text-3xl font-bold">Pagos <span class="yr"></span></h2>
+        <button id="btnNuevoPago" class="btn h-12 px-5 rounded-2xl bg-ambar">+ Nuevo</button>
+      </div>
+      <p class="text-slate-500 text-sm">Anotá lo que se deben entre ustedes (un reintegro de compra, efectivo entregado…) y marcá cuando se pagó.</p>
+      <div id="pagosBal"></div>
+      <div id="pagosTabs" class="grid grid-cols-2 gap-2"></div>
+      <div id="pagosList" class="space-y-3"></div>
+    </section>
+
     <!-- HISTORIAL -->
     <section id="v-hist" class="view hidden space-y-4">
       <h2 class="text-3xl font-bold">Historial <span class="yr"></span></h2>
@@ -231,14 +244,29 @@ tailwind.config = { theme: { extend: {
   </main>
 
   <nav class="fixed bottom-0 inset-x-0 bg-[#0d0a22] border-t border-[#3a2f7a] z-30 pb-safe">
-    <div class="max-w-2xl mx-auto grid grid-cols-5">
-      <button data-go="inicio" class="nav py-2 text-xs font-bold"><span class="block text-xl">🏠</span>Inicio</button>
-      <button data-go="venta" class="nav py-2 text-xs font-bold"><span class="block text-xl">💵</span>Vender</button>
-      <button data-go="stock" class="nav py-2 text-xs font-bold"><span class="block text-xl">📦</span>Stock</button>
-      <button data-go="hist" class="nav py-2 text-xs font-bold"><span class="block text-xl">🧾</span>Historial</button>
-      <button data-go="cfg" class="nav py-2 text-xs font-bold"><span class="block text-xl">⚙️</span>Ajustes</button>
+    <div class="max-w-2xl mx-auto grid grid-cols-6">
+      <button data-go="inicio" class="nav py-2 text-[11px] font-bold"><span class="block text-xl">🏠</span>Inicio</button>
+      <button data-go="venta" class="nav py-2 text-[11px] font-bold"><span class="block text-xl">💵</span>Vender</button>
+      <button data-go="stock" class="nav py-2 text-[11px] font-bold"><span class="block text-xl">📦</span>Stock</button>
+      <button data-go="pagos" class="nav py-2 text-[11px] font-bold"><span class="block text-xl">🤝</span>Pagos</button>
+      <button data-go="hist" class="nav py-2 text-[11px] font-bold"><span class="block text-xl">🧾</span>Historial</button>
+      <button data-go="cfg" class="nav py-2 text-[11px] font-bold"><span class="block text-xl">⚙️</span>Ajustes</button>
     </div>
   </nav>
+</div>
+
+<!-- NUEVO PAGO -->
+<div id="pagoModal" class="hidden fixed inset-0 z-50 bg-black/70 flex items-end sm:items-center justify-center p-3">
+  <div class="card w-full max-w-md max-h-[90vh] overflow-y-auto p-5 space-y-3">
+    <h3 class="text-2xl font-bold">Nuevo pago</h3>
+    <label class="block text-sm font-semibold">¿Quién paga?<input id="pg-de" list="nombres" autocomplete="off" class="inp mt-1"></label>
+    <label class="block text-sm font-semibold">¿A quién?<input id="pg-a" list="nombres" autocomplete="off" class="inp mt-1"></label>
+    <label class="block text-sm font-semibold">Monto ($)<input id="pg-monto" type="number" inputmode="numeric" min="0" class="inp mt-1"></label>
+    <label class="block text-sm font-semibold">Concepto<input id="pg-conc" type="text" placeholder="Ej: reintegro de la compra de pan" class="inp mt-1"></label>
+    <div class="grid grid-cols-2 gap-2"><button id="pg-pend" class="btn h-14 rounded-2xl">⏳ Pendiente</button><button id="pg-paid" class="btn h-14 rounded-2xl">✅ Ya pagado</button></div>
+    <div class="grid grid-cols-2 gap-2"><button id="pg-cancel" class="btn h-14 rounded-2xl bg-white">Cancelar</button><button id="pg-save" class="btn h-14 rounded-2xl bg-ambar">Guardar</button></div>
+    <datalist id="nombres"></datalist>
+  </div>
 </div>
 
 <!-- CONTADOR PANTALLA COMPLETA -->
@@ -331,6 +359,7 @@ const vendedor = () => localStorage.getItem('vendedor') || '';
 const DEF = {
   Ventas: { titulo: 'Ventas', uno: 'venta', f: [['fecha', 'Fecha', 'date'], ['hora', 'Hora', 'time'], ['cantidad', 'Porciones', 'number'], ['monto', 'Monto ($)', 'number'], ['metodo', 'Método', 'select:Efectivo,Transferencia,Otro'], ['cobrado', 'Cobrado', 'select:Sí,No'], ['vendedor', 'Vendedor', 'text'], ['nota', 'Nota', 'text']] },
   Stock_Costos: { titulo: 'Compras', uno: 'compra', f: [['fecha', 'Fecha', 'date'], ['hora', 'Hora', 'time'], ['insumo', 'Insumo', 'text'], ['cantidad', 'Cantidad', 'number'], ['unidad', 'Unidad', 'text'], ['costo', 'Costo total ($)', 'number'], ['nota', 'Nota', 'text'], ['vendedor', 'Cargó', 'text']] },
+  Pagos: { titulo: 'Pagos', uno: 'pago', f: [['fecha', 'Fecha', 'date'], ['hora', 'Hora', 'time'], ['de', 'Quién paga', 'text'], ['a', 'A quién', 'text'], ['monto', 'Monto ($)', 'number'], ['concepto', 'Concepto', 'text'], ['estado', 'Estado', 'select:Pendiente,Pagado'], ['pagado', 'Pagado el (aaaa-mm-dd hh:mm)', 'text'], ['cargo', 'Cargó', 'text']] },
   Produccion: { titulo: 'Producción', uno: 'lote', f: [['fecha', 'Fecha', 'date'], ['hora', 'Hora', 'time'], ['porciones', 'Porciones', 'number'], ['nota', 'Nota', 'text'], ['vendedor', 'Cargó', 'text']] }
 };
 
@@ -351,7 +380,8 @@ async function api(action, extra = {}) {
     } else {
       res = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action, key, year: S.year, ...extra }) });
     }
-  } catch (e) { throw new Error('Sin conexión con el servidor. Revisá internet y la URL del Web App.'); }
+  } catch (e) { S.netFail = true; renderSync(); throw new Error('Sin conexión con el servidor. Revisá internet y la URL del Web App.'); }
+  if (S.netFail) { S.netFail = false; renderSync(); }
   let j;
   try { j = await res.json(); } catch (e) { throw new Error('Respuesta inválida. Revisá la implementación del Apps Script.'); }
   if (!j.ok) { const er = new Error(j.error || 'Error desconocido'); er.server = true; throw er; }
@@ -362,10 +392,15 @@ async function withBusy(btn, fn) {
   if (btn.disabled) return;
   const old = btn.textContent;
   btn.disabled = true; btn.textContent = 'Guardando...';
-  try { await fn(); } catch (e) { handleErr(e); }
+  try { await fn(); } catch (e) { netOrErr(e); }
   finally { btn.disabled = false; btn.textContent = old; }
 }
-function handleErr(e) { if (e.message === 'Clave incorrecta') showLock(e.message); else toast(e.message, 'err'); }
+function handleErr(e) {
+  if (e.message === 'Clave incorrecta') showLock(e.message);
+  else if (/^Sin conexión/.test(e.message)) renderSync();   // sin internet: solo el indicador chico, sin molestar
+  else toast(e.message, 'err');
+}
+function netOrErr(e) { if (/^Sin conexión/.test(e.message)) toast('Sin conexión: esta acción necesita internet', 'err'); else handleErr(e); }
 
 /* ============ ACCESO ============ */
 function showApp() { $('splash').classList.add('hidden'); $('lock').classList.add('hidden'); $('app').classList.remove('hidden'); go(S.view); if (!maybeTuto() && !vendedor()) askName(); }
@@ -469,6 +504,8 @@ function applyData(d) {
   $('m-anio').textContent = money(d.recaudado);
   $('m-pend').textContent = d.pendiente > 0 ? 'Sin cobrar: ' + money(d.pendiente) : '';
   $('m-gan').textContent = money(d.ganancia);
+  $('m-pagos').classList.toggle('hidden', !(d.pagosPend > 0));
+  $('m-pagos').textContent = `🤝 ${d.pagosPend} pago${d.pagosPend > 1 ? 's' : ''} pendiente${d.pagosPend > 1 ? 's' : ''} entre nosotros · ${money(d.pagosPendMonto)}`;
   $('s-prod').textContent = d.producidas; $('s-vend').textContent = d.vendidas; $('s-disp').textContent = d.stock;
   $('s-cporc').textContent = money(d.costoPorcion); $('s-costo').textContent = money(d.costoTotal); $('s-gan').textContent = money(d.ganancia);
   $('cfg-precio').value = d.config.precio; $('cfg-qty').value = d.config.comboQty; $('cfg-combo').value = d.config.precioCombo;
@@ -477,7 +514,7 @@ function applyData(d) {
 async function refresh(force) {
   if (force === true) Object.keys(localStorage).filter(k => k.startsWith('lista:')).forEach(k => localStorage.removeItem(k));
   $('btnRefresh').textContent = '…'; busy(true);
-  try { applyData(await api('getData')); if (S.view === 'hist') loadHist(); if (S.view === 'graf') loadGraf(); }
+  try { applyData(await api('getData')); if (S.view === 'hist') loadHist(); if (S.view === 'graf') loadGraf(); if (S.view === 'pagos') loadPagos(); }
   catch (e) { handleErr(e); }
   busy(false); $('btnRefresh').textContent = '↻';
 }
@@ -507,6 +544,7 @@ function go(v) {
   if (v === 'venta') renderVenta();
   if (v === 'cfg') $('cfg-vend').value = vendedor();
   if (v === 'hist') loadHist();
+  if (v === 'pagos') loadPagos();
   if (v === 'graf') loadGraf();
   window.scrollTo(0, 0);
 }
@@ -552,9 +590,12 @@ function nowStamp() { const d = new Date(), p = n => String(n).padStart(2, '0');
 
 function renderSync() {
   const n = Q.list.length, b = $('sync'), bar = $('errBar'), base = 'h-10 px-3 rounded-full text-sm font-bold ';
-  if (Q.err) { b.textContent = `⚠ ${n} sin enviar`; b.className = base + 'bg-magenta text-[#1b1240] animate-pulse'; bar.textContent = '⚠ ' + Q.err + ' · Tocá para reintentar'; bar.classList.remove('hidden'); }
-  else if (n) { b.textContent = `⟳ Enviando ${n}`; b.className = base + 'bg-ambar text-[#1b1240]'; bar.classList.add('hidden'); }
-  else { b.textContent = '✓ Enviado'; b.className = base + 'bg-turq/20 text-turq'; bar.classList.add('hidden'); }
+  const off = !navigator.onLine || S.netFail;
+  bar.classList.add('hidden');
+  if (Q.err && !off) { b.textContent = `⚠ ${n} sin enviar`; b.className = base + 'bg-magenta text-[#1b1240] animate-pulse'; bar.textContent = '⚠ ' + Q.err + ' · Tocá para reintentar'; bar.classList.remove('hidden'); }
+  else if (off) { b.textContent = n ? `📴 ${n} sin enviar` : '📴 Sin conexión'; b.className = base + 'bg-white/10 text-slate-300'; }
+  else if (n) { b.textContent = `⟳ Enviando ${n}`; b.className = base + 'bg-ambar text-[#1b1240]'; }
+  else { b.textContent = '✓ Enviado'; b.className = base + 'bg-turq/20 text-turq'; }
 }
 async function pump() {
   if (Q.busy || !Q.list.length || !sessionStorage.getItem('clave')) return;
@@ -565,7 +606,7 @@ async function pump() {
     try {
       const r = await api('add', { sheet: it.sheet, data: { ...it.data, cid: it.cid } });
       touched.add(it.sheet); Q.list.shift(); saveQ();
-      if (!Q.list.length && r.year === S.year) { applyData(r); advanceCaches(prev0, touched); if (S.view === 'hist') loadHist(); if (S.view === 'graf') loadGraf(); }
+      if (!Q.list.length && r.year === S.year) { applyData(r); advanceCaches(prev0, touched); if (S.view === 'hist') loadHist(); if (S.view === 'graf') loadGraf(); if (S.view === 'pagos') loadPagos(); }
       renderSync();
     } catch (e) {
       if (e.message === 'Clave incorrecta') { Q.busy = false; showLock(e.message); return; }
@@ -576,7 +617,8 @@ async function pump() {
   Q.busy = false; renderSync();
 }
 $('sync').onclick = pump; $('errBar').onclick = pump;
-window.addEventListener('online', pump);
+window.addEventListener('online', () => { S.netFail = false; renderSync(); pump(); });
+window.addEventListener('offline', renderSync);
 setInterval(() => { if (Q.list.length && !Q.busy) pump(); }, 15000);
 
 function celebrate(msg) {
@@ -591,6 +633,7 @@ function applyLocal(sheet, d) {
     x.vendidas += n(d.cantidad); x.stock -= n(d.cantidad); x.ventasAnio++; x.ventasHoy++;
     if (d.cobrado === 'Sí') { x.recaudado += n(d.monto); x.recaudadoHoy += n(d.monto); } else x.pendiente += n(d.monto);
   } else if (sheet === 'Stock_Costos') x.costoTotal += n(d.costo);
+  else if (sheet === 'Pagos') { if (d.estado !== 'Pagado') { x.pagosPend = (x.pagosPend || 0) + 1; x.pagosPendMonto = (x.pagosPendMonto || 0) + n(d.monto); } }
   else { x.producidas += n(d.porciones); x.stock += n(d.porciones); }
   x.costoPorcion = x.producidas > 0 ? Math.round(x.costoTotal / x.producidas) : 0;
   x.ganancia = x.recaudado - x.costoTotal;
@@ -729,7 +772,7 @@ function renderHist(rows) {
 }
 async function loadHist() {
   const sh = S.tab, y = S.year;
-  $('histTabs').innerHTML = Object.keys(DEF).map(k => `<button data-t="${k}" class="btn h-12 rounded-2xl text-sm ${k === S.tab ? 'bg-noche text-white' : 'bg-white'}">${DEF[k].titulo}</button>`).join('');
+  $('histTabs').innerHTML = ['Ventas', 'Stock_Costos', 'Produccion'].map(k => `<button data-t="${k}" class="btn h-12 rounded-2xl text-sm ${k === S.tab ? 'bg-noche text-white' : 'bg-white'}">${DEF[k].titulo}</button>`).join('');
   $('histTabs').querySelectorAll('button').forEach(b => b.onclick = () => { S.tab = b.dataset.t; loadHist(); });
   const c = cachedList(sh);
   renderHist(c ? c.rows : null);
@@ -741,13 +784,13 @@ async function loadHist() {
     if (rec.v !== S.ver && !Q.list.length) await refresh();   // se detectó un cambio: se actualiza todo (inicio incluido)
   } catch (e) {
     if (e.message === 'Clave incorrecta') handleErr(e);
-    else if (c) toast('Sin conexión: mostrando datos guardados', 'err');
+    else if (c) renderSync();
     else if (S.view === 'hist') { $('histList').innerHTML = errCard(e.message); $('retryBtn').onclick = loadHist; }
   } finally { busy(false); }
 }
-function openEdit(r) {
+function openEdit(r, sheet) {
   if (!r.row) return toast('Se está enviando, esperá un momento', 'err');
-  S.edit = r; const d = DEF[S.tab];
+  S.edit = r; S.editSheet = sheet || S.tab; const d = DEF[S.editSheet];
   $('mTitle').textContent = 'Editar ' + d.uno;
   $('mFields').innerHTML = d.f.map(([k, label, type]) => {
     const v = esc(r[k]);
@@ -763,19 +806,105 @@ $('mCancel').onclick = closeModal;
 $('mSave').onclick = () => withBusy($('mSave'), async () => {
   if (Q.list.length) throw new Error('Esperá a que termine de enviarse lo pendiente.');
   const data = {}; $('mFields').querySelectorAll('[data-k]').forEach(i => data[i.dataset.k] = i.value);
-  const prev = S.ver, sh = S.tab, row = S.edit.row;
+  const prev = S.ver, sh = S.editSheet, row = S.edit.row;
   applyData(await api('update', { sheet: sh, row, data }));
   patchList(sh, prev, rows => rows.map(r => r.row === row ? { ...r, ...numify(data) } : r)); advanceCaches(prev, new Set([sh]));
-  S.lists = {}; closeModal(); toast('Cambios guardados'); if (S.view === 'hist') loadHist();
+  S.lists = {}; closeModal(); toast('Cambios guardados'); if (S.view === 'hist') loadHist(); if (S.view === 'pagos') loadPagos();
 });
 $('mDel').onclick = () => withBusy($('mDel'), async () => {
   if (Q.list.length) throw new Error('Esperá a que termine de enviarse lo pendiente.');
   if (!confirm('¿Borrar este registro? No se puede deshacer.')) return;
-  const prev = S.ver, sh = S.tab, row = S.edit.row;
+  const prev = S.ver, sh = S.editSheet, row = S.edit.row;
   applyData(await api('delete', { sheet: sh, row }));
   patchList(sh, prev, rows => rows.filter(r => r.row !== row).map(r => r.row > row ? { ...r, row: r.row - 1 } : r)); advanceCaches(prev, new Set([sh]));
-  S.lists = {}; closeModal(); toast('Registro borrado'); if (S.view === 'hist') loadHist();
+  S.lists = {}; closeModal(); toast('Registro borrado'); if (S.view === 'hist') loadHist(); if (S.view === 'pagos') loadPagos();
 });
+
+/* ============ PAGOS ENTRE NOSOTROS ============ */
+S.pf = 'Pendiente'; S.pgEstado = 'Pendiente'; S.pagosRows = null;
+const fpag = p => String(p).slice(8, 10) + '/' + String(p).slice(5, 7) + ' ' + String(p).slice(11, 16);
+function nombres() {
+  const set = new Set([vendedor()]);
+  ((cachedList('Ventas') || {}).rows || []).forEach(r => set.add(r.vendedor));
+  ((cachedList('Pagos') || {}).rows || []).forEach(r => { set.add(r.de); set.add(r.a); });
+  set.delete(''); set.delete(undefined);
+  return [...set];
+}
+function renderPagos(rows) {
+  const L = $('pagosList'), B = $('pagosBal');
+  if (rows !== null) S.pagosRows = rows;
+  $('pagosTabs').innerHTML = ['Pendiente', 'Pagado'].map(k => `<button data-f="${k}" class="btn h-12 rounded-2xl text-sm ${k === S.pf ? 'bg-noche text-white' : 'bg-white'}">${k === 'Pendiente' ? '⏳ Pendientes' : '✅ Pagados'}</button>`).join('');
+  $('pagosTabs').querySelectorAll('button').forEach(b => b.onclick = () => { S.pf = b.dataset.f; renderPagos(S.pagosRows); });
+  if (rows === null && S.pagosRows === null) { L.innerHTML = skeleton(3); B.innerHTML = ''; return; }
+  const all = withPending('Pagos', S.pagosRows).sort((a, b) => (b.fecha + b.hora).localeCompare(a.fecha + a.hora));
+  const pend = all.filter(r => r.estado !== 'Pagado');
+  const bal = {};
+  pend.forEach(r => { const m = Number(r.monto) || 0; bal[r.de] = (bal[r.de] || 0) - m; bal[r.a] = (bal[r.a] || 0) + m; });
+  const people = Object.entries(bal).filter(([k, v]) => k && v).sort((a, b) => b[1] - a[1]);
+  B.innerHTML = people.length ? `<div class="card p-4 space-y-2"><p class="text-sm font-bold">Balance de pendientes</p>${people.map(([k, v]) => `<div class="flex justify-between"><span class="font-bold">${esc(k)}</span><span class="font-bold ${v > 0 ? 'text-turq' : 'text-magenta'}">${v > 0 ? 'le deben ' : 'debe '}${money(Math.abs(v))}</span></div>`).join('')}</div>` : '';
+  const list = S.pf === 'Pendiente' ? pend : all.filter(r => r.estado === 'Pagado');
+  if (!list.length) {
+    L.innerHTML = S.pf === 'Pendiente' ? empty('🤝', 'No hay pagos pendientes', 'Cuando se deban plata entre ustedes, tocá “+ Nuevo” y anotalo. Después lo marcás como pagado.')
+      : empty('📒', 'Todavía no hay pagos marcados', 'Los pagos que marques como pagados van a aparecer acá.');
+    return;
+  }
+  L.innerHTML = list.map((r, i) => `<div data-i="${i}" class="card p-4 space-y-2">
+    <div class="flex justify-between gap-3"><div><p class="font-bold">${esc(r.de)} → ${esc(r.a)}</p>
+    <p class="text-xs text-slate-500">${fdate(r.fecha)} · ${esc(r.hora)}${r.concepto ? ' · ' + esc(r.concepto) : ''}${r.row ? '' : ' · enviando…'}</p></div>
+    <p class="font-bold text-lg shrink-0">${money(r.monto)}</p></div>
+    ${r.estado === 'Pagado' ? `<p class="text-xs text-turq font-bold">✅ Pagado${r.pagado ? ' el ' + esc(fpag(r.pagado)) : ''}</p>` : `<button data-pay="${i}" class="btn w-full h-12 rounded-2xl bg-turq">✓ Marcar como pagado</button>`}</div>`).join('');
+  L.querySelectorAll('[data-i]').forEach(c => c.onclick = e => { if (!e.target.closest('[data-pay]')) openEdit(list[+c.dataset.i], 'Pagos'); });
+  L.querySelectorAll('[data-pay]').forEach(b => b.onclick = () => marcarPagado(list[+b.dataset.pay], b));
+}
+async function loadPagos() {
+  const y = S.year, c = cachedList('Pagos');
+  renderPagos(c ? c.rows : null);
+  if (c && S.ver && c.v === S.ver) return;
+  busy(true);
+  try {
+    const rec = await fetchList('Pagos');
+    if (S.view === 'pagos' && S.year === y) renderPagos(rec.rows);
+    if (rec.v !== S.ver && !Q.list.length) await refresh();
+  } catch (e) {
+    if (e.message === 'Clave incorrecta') handleErr(e);
+    else if (c) renderSync();
+    else if (S.view === 'pagos') { $('pagosList').innerHTML = errCard(e.message); $('retryBtn').onclick = loadPagos; }
+  } finally { busy(false); }
+}
+async function marcarPagado(r, btn) {
+  if (!r.row) return toast('Se está enviando, esperá un momento', 'err');
+  if (Q.list.length) return toast('Esperá a que termine de enviarse lo pendiente.', 'err');
+  if (!confirm(`¿Marcar como pagado ${money(r.monto)} de ${r.de} a ${r.a}?`)) return;
+  const t = nowStamp(), data = { estado: 'Pagado', pagado: t.fecha + ' ' + t.hora }, prev = S.ver;
+  btn.disabled = true; btn.textContent = 'Guardando…'; busy(true);
+  try {
+    applyData(await api('update', { sheet: 'Pagos', row: r.row, data }));
+    patchList('Pagos', prev, rows => rows.map(x => x.row === r.row ? { ...x, ...data } : x)); advanceCaches(prev, new Set(['Pagos']));
+    toast('Pago marcado ✓'); loadPagos();
+  } catch (e) { btn.disabled = false; btn.textContent = '✓ Marcar como pagado'; netOrErr(e); }
+  finally { busy(false); }
+}
+function setPgEstado(e) {
+  S.pgEstado = e;
+  $('pg-pend').className = 'btn h-14 rounded-2xl ' + (e === 'Pendiente' ? 'bg-ambar' : 'bg-white');
+  $('pg-paid').className = 'btn h-14 rounded-2xl ' + (e === 'Pagado' ? 'bg-turq' : 'bg-white');
+}
+$('btnNuevoPago').onclick = () => {
+  $('nombres').innerHTML = nombres().map(n => `<option value="${esc(n)}">`).join('');
+  ['pg-a', 'pg-monto', 'pg-conc'].forEach(i => $(i).value = ''); $('pg-de').value = vendedor();
+  setPgEstado('Pendiente'); $('pagoModal').classList.remove('hidden');
+};
+$('pg-pend').onclick = () => setPgEstado('Pendiente'); $('pg-paid').onclick = () => setPgEstado('Pagado');
+$('pg-cancel').onclick = () => $('pagoModal').classList.add('hidden');
+$('pg-save').onclick = () => {
+  const de = $('pg-de').value.trim(), a = $('pg-a').value.trim(), monto = $('pg-monto').value;
+  if (!de || !a) return toast('Completá quién paga y a quién', 'err');
+  if (!(Number(monto) > 0)) return toast('Ingresá el monto', 'err');
+  const t = nowStamp();
+  if (submit('Pagos', { de, a, monto, concepto: $('pg-conc').value.trim(), estado: S.pgEstado, pagado: S.pgEstado === 'Pagado' ? t.fecha + ' ' + t.hora : '', cargo: vendedor() }, '¡Pago anotado!')) {
+    $('pagoModal').classList.add('hidden'); if (S.view === 'pagos') loadPagos();
+  }
+};
 
 /* ============ GRÁFICOS ============ */
 function cols(items, color) {
@@ -823,7 +952,7 @@ async function loadGraf() {
     if (rec.v !== S.ver && !Q.list.length) await refresh();
   } catch (e) {
     if (e.message === 'Clave incorrecta') handleErr(e);
-    else if (c) toast('Sin conexión: mostrando datos guardados', 'err');
+    else if (c) renderSync();
     else if (S.view === 'graf') { $('grafBody').innerHTML = errCard(e.message); $('retryBtn').onclick = loadGraf; }
   } finally { busy(false); }
 }
