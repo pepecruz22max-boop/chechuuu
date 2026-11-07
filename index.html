@@ -175,15 +175,23 @@ tailwind.config = { theme: { extend: {
         <div><p class="text-slate-500">Costo por porción</p><p id="s-cporc" class="mval text-2xl font-bold">–</p></div>
         <div><p class="text-slate-500">Costo total</p><p id="s-costo" class="mval text-2xl font-bold">–</p></div>
         <div><p class="text-slate-500">Ganancia</p><p id="s-gan" class="mval text-2xl font-bold">–</p></div>
+        <div><p class="text-slate-500">Packaging (gastado)</p><p id="s-pack" class="mval text-2xl font-bold">–</p></div>
+        <div><p class="text-slate-500">Packaging por ensalada</p><p id="s-packu" class="mval text-2xl font-bold">–</p></div>
+        <div><p class="text-slate-500">Potes restantes</p><p id="s-potes" class="mval text-2xl font-bold">–</p></div>
+        <div><p class="text-slate-500">Costo por pote</p><p id="s-pote1" class="mval text-2xl font-bold">–</p></div>
       </div>
       <div class="card p-5 space-y-3">
-        <h3 class="font-bold text-xl">Compra de insumos</h3>
+        <h3 class="font-bold text-xl">Compras</h3>
+        <div class="grid grid-cols-2 gap-2"><button id="c-t-ins" class="btn h-12 rounded-2xl text-sm">🍓 Insumo</button><button id="c-t-pack" class="btn h-12 rounded-2xl text-sm">📦 Packaging</button></div>
+        <div id="c-modo" class="hidden"><p class="text-xs text-slate-500 mb-1">¿Cómo cargás el costo de los potes?</p>
+          <div class="grid grid-cols-2 gap-2"><button id="c-m-tot" class="btn h-12 rounded-2xl text-sm">Compra total</button><button id="c-m-uni" class="btn h-12 rounded-2xl text-sm">Por unidad</button></div></div>
         <input id="c-insumo" type="text" placeholder="Insumo (ej: Pan, chorizo)" class="inp">
         <div class="grid grid-cols-2 gap-3">
           <input id="c-cant" type="number" inputmode="decimal" min="0" placeholder="Cantidad" class="inp">
           <select id="c-unidad" class="inp"><option>kg</option><option>unidades</option><option>litros</option><option>paquetes</option></select>
         </div>
         <input id="c-costo" type="number" inputmode="numeric" min="0" placeholder="Costo total pagado ($)" class="inp">
+        <p id="c-prev" class="hidden text-sm font-bold text-ambar"></p>
         <button id="btnCompra" class="btn w-full h-14 rounded-2xl bg-turq text-white text-lg">Guardar compra</button>
       </div>
       <div class="card p-5 space-y-3">
@@ -358,7 +366,7 @@ const vendedor = () => localStorage.getItem('vendedor') || '';
 
 const DEF = {
   Ventas: { titulo: 'Ventas', uno: 'venta', f: [['fecha', 'Fecha', 'date'], ['hora', 'Hora', 'time'], ['cantidad', 'Porciones', 'number'], ['monto', 'Monto ($)', 'number'], ['metodo', 'Método', 'select:Efectivo,Transferencia,Otro'], ['cobrado', 'Cobrado', 'select:Sí,No'], ['vendedor', 'Vendedor', 'text'], ['nota', 'Nota', 'text']] },
-  Stock_Costos: { titulo: 'Compras', uno: 'compra', f: [['fecha', 'Fecha', 'date'], ['hora', 'Hora', 'time'], ['insumo', 'Insumo', 'text'], ['cantidad', 'Cantidad', 'number'], ['unidad', 'Unidad', 'text'], ['costo', 'Costo total ($)', 'number'], ['nota', 'Nota', 'text'], ['vendedor', 'Cargó', 'text']] },
+  Stock_Costos: { titulo: 'Compras', uno: 'compra', f: [['fecha', 'Fecha', 'date'], ['hora', 'Hora', 'time'], ['insumo', 'Insumo', 'text'], ['cantidad', 'Cantidad', 'number'], ['unidad', 'Unidad', 'text'], ['costo', 'Costo total ($)', 'number'], ['nota', 'Nota', 'text'], ['vendedor', 'Cargó', 'text'], ['tipo', 'Tipo', 'select:Insumo,Packaging']] },
   Pagos: { titulo: 'Pagos', uno: 'pago', f: [['fecha', 'Fecha', 'date'], ['hora', 'Hora', 'time'], ['de', 'Quién paga', 'text'], ['a', 'A quién', 'text'], ['monto', 'Monto ($)', 'number'], ['concepto', 'Concepto', 'text'], ['estado', 'Estado', 'select:Pendiente,Pagado'], ['pagado', 'Pagado el (aaaa-mm-dd hh:mm)', 'text'], ['cargo', 'Cargó', 'text']] },
   Produccion: { titulo: 'Producción', uno: 'lote', f: [['fecha', 'Fecha', 'date'], ['hora', 'Hora', 'time'], ['porciones', 'Porciones', 'number'], ['nota', 'Nota', 'text'], ['vendedor', 'Cargó', 'text']] }
 };
@@ -504,6 +512,10 @@ function applyData(d) {
   $('m-anio').textContent = money(d.recaudado);
   $('m-pend').textContent = d.pendiente > 0 ? 'Sin cobrar: ' + money(d.pendiente) : '';
   $('m-gan').textContent = money(d.ganancia);
+  $('s-pack').textContent = money(d.costoPack || 0);
+  $('s-packu').textContent = d.vendidas > 0 && d.costoPack ? money(Math.round(d.costoPack / d.vendidas)) : '–';
+  $('s-potes').textContent = d.potes ? d.potes - d.vendidas : '–';
+  $('s-pote1').textContent = d.potes ? money(Math.round(d.costoPack / d.potes)) : '–';
   $('m-pagos').classList.toggle('hidden', !(d.pagosPend > 0));
   $('m-pagos').textContent = `🤝 ${d.pagosPend} pago${d.pagosPend > 1 ? 's' : ''} pendiente${d.pagosPend > 1 ? 's' : ''} entre nosotros · ${money(d.pagosPendMonto)}`;
   $('s-prod').textContent = d.producidas; $('s-vend').textContent = d.vendidas; $('s-disp').textContent = d.stock;
@@ -632,7 +644,7 @@ function applyLocal(sheet, d) {
   if (sheet === 'Ventas') {
     x.vendidas += n(d.cantidad); x.stock -= n(d.cantidad); x.ventasAnio++; x.ventasHoy++;
     if (d.cobrado === 'Sí') { x.recaudado += n(d.monto); x.recaudadoHoy += n(d.monto); } else x.pendiente += n(d.monto);
-  } else if (sheet === 'Stock_Costos') x.costoTotal += n(d.costo);
+  } else if (sheet === 'Stock_Costos') { x.costoTotal += n(d.costo); if (d.tipo === 'Packaging') { x.costoPack = (x.costoPack || 0) + n(d.costo); x.potes = (x.potes || 0) + n(d.cantidad); } }
   else if (sheet === 'Pagos') { if (d.estado !== 'Pagado') { x.pagosPend = (x.pagosPend || 0) + 1; x.pagosPendMonto = (x.pagosPendMonto || 0) + n(d.monto); } }
   else { x.producidas += n(d.porciones); x.stock += n(d.porciones); }
   x.costoPorcion = x.producidas > 0 ? Math.round(x.costoTotal / x.producidas) : 0;
@@ -658,12 +670,38 @@ $('btnVenta').onclick = () => {
   const ok = submit('Ventas', { cantidad: S.qty, tipo: manual ? 'Monto manual' : 'Precio lista', monto, metodo: S.metodo, cobrado: S.cobrado ? 'Sí' : 'No', vendedor: vendedor(), nota: $('nota').value.trim() }, '¡Venta guardada! ' + money(monto));
   if (ok) { resetVenta(); go('inicio'); }
 };
+S.cTipo = 'Insumo'; S.cModo = 'total';
+function renderCompra() {
+  const pk = S.cTipo === 'Packaging', on = (c, k) => 'btn h-12 rounded-2xl text-sm ' + (c ? 'bg-noche text-white' : 'bg-white');
+  $('c-t-ins').className = on(!pk); $('c-t-pack').className = on(pk);
+  $('c-m-tot').className = on(S.cModo === 'total'); $('c-m-uni').className = on(S.cModo === 'unidad');
+  $('c-modo').classList.toggle('hidden', !pk); $('c-unidad').classList.toggle('hidden', pk);
+  $('c-insumo').placeholder = pk ? 'Detalle (opcional, ej: potes 250 cc)' : 'Insumo (ej: Pan, chorizo)';
+  $('c-cant').placeholder = pk ? 'Cantidad de potes' : 'Cantidad';
+  $('c-costo').placeholder = pk && S.cModo === 'unidad' ? 'Costo por pote ($)' : 'Costo total pagado ($)';
+  const cant = Number($('c-cant').value) || 0, v = Number($('c-costo').value) || 0, p = $('c-prev');
+  if (pk && cant > 0 && v > 0) { p.textContent = S.cModo === 'unidad' ? `Total de la compra: ${money(cant * v)}` : `Son ${money(Math.round(v / cant))} por pote`; p.classList.remove('hidden'); }
+  else p.classList.add('hidden');
+}
+$('c-t-ins').onclick = () => { S.cTipo = 'Insumo'; renderCompra(); };
+$('c-t-pack').onclick = () => { S.cTipo = 'Packaging'; renderCompra(); };
+$('c-m-tot').onclick = () => { S.cModo = 'total'; renderCompra(); };
+$('c-m-uni').onclick = () => { S.cModo = 'unidad'; renderCompra(); };
+$('c-cant').oninput = renderCompra; $('c-costo').oninput = renderCompra;
 $('btnCompra').onclick = () => {
-  const insumo = $('c-insumo').value.trim(), costo = $('c-costo').value;
-  if (!insumo || costo === '') return toast('Completá el insumo y el costo total', 'err');
-  if (submit('Stock_Costos', { insumo, cantidad: $('c-cant').value, unidad: $('c-unidad').value, costo, vendedor: vendedor() }, '¡Compra guardada!'))
-    ['c-insumo', 'c-cant', 'c-costo'].forEach(i => $(i).value = '');
+  const pk = S.cTipo === 'Packaging', raw = $('c-costo').value, cant = Number($('c-cant').value) || 0, v = Number(raw), det = $('c-insumo').value.trim();
+  let data;
+  if (pk) {
+    if (!(cant > 0)) return toast('Ingresá la cantidad de potes', 'err');
+    if (raw === '' || !(v >= 0)) return toast(S.cModo === 'unidad' ? 'Ingresá el costo por pote' : 'Ingresá el costo total', 'err');
+    data = { insumo: det || 'Packaging', cantidad: cant, unidad: 'potes', costo: S.cModo === 'unidad' ? cant * v : v, tipo: 'Packaging', nota: S.cModo === 'unidad' ? `Costo por pote ${money(v)}` : '', vendedor: vendedor() };
+  } else {
+    if (!det || raw === '') return toast('Completá el insumo y el costo total', 'err');
+    data = { insumo: det, cantidad: $('c-cant').value, unidad: $('c-unidad').value, costo: raw, tipo: 'Insumo', vendedor: vendedor() };
+  }
+  if (submit('Stock_Costos', data, pk ? '¡Packaging guardado!' : '¡Compra guardada!')) { ['c-insumo', 'c-cant', 'c-costo'].forEach(i => $(i).value = ''); renderCompra(); }
 };
+renderCompra();
 $('btnProd').onclick = () => {
   const porciones = $('p-porc').value;
   if (!(Number(porciones) > 0)) return toast('Ingresá las porciones elaboradas', 'err');
@@ -761,7 +799,7 @@ function renderHist(rows) {
   L.innerHTML = head + rows.map((r, i) => {
     let t, s, m, pend = false;
     if (S.tab === 'Ventas') { t = `${r.cantidad} porc. · ${esc(r.metodo)}`; m = money(r.monto); pend = r.cobrado !== 'Sí'; s = esc(r.vendedor) + (r.nota ? ' · ' + esc(r.nota) : ''); }
-    else if (S.tab === 'Stock_Costos') { t = esc(r.insumo); m = money(r.costo); s = `${r.cantidad || ''} ${esc(r.unidad)} · ${esc(r.vendedor)}`; }
+    else if (S.tab === 'Stock_Costos') { t = (r.tipo === 'Packaging' ? '📦 ' : '') + esc(r.insumo); m = money(r.costo); s = `${r.cantidad || ''} ${esc(r.unidad)} · ${esc(r.vendedor)}`; }
     else { t = `${r.porciones} porciones`; m = ''; s = esc(r.vendedor) + (r.nota ? ' · ' + esc(r.nota) : ''); }
     return `<button data-i="${i}" class="card w-full text-left p-4 flex justify-between gap-3 active:translate-y-[2px]" ${pend ? 'style="border-color:#ff4fa3;border-width:2px;background:#2b1546"' : ''}>
       <span><span class="block font-bold">${t}${pend ? ' <span class="bg-magenta text-[#1b1240] text-[10px] font-bold px-2 py-0.5 rounded-full align-middle ml-1">⏳ PENDIENTE</span>' : ''}</span>
